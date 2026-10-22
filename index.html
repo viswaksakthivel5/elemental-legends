@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ELEMENTAL LEGENDS: RISE OF THE FALLEN KING | 3D Dark Fantasy Action</title>
+  <meta name="description" content="Cinematic 3D dark-fantasy action game. Master Fire, Ice, and Storm elements to defeat the Fallen King in an explorable gothic battlefield.">
+  <link rel="stylesheet" href="/src/ui/style.css">
+</head>
+<body>
+  <!-- 3D Canvas Mount -->
+  <div id="canvas-container"></div>
+
+  <!-- Damage Screen Vignette Flash -->
+  <div id="damage-vignette"></div>
+
+  <!-- Floating Damage Numbers Container -->
+  <div id="damage-numbers-container"></div>
+
+  <!-- IN-GAME HUD -->
+  <div id="hud-overlay" style="display: none;">
+    <!-- Top Objective & Boss Bar -->
+    <div class="hud-top">
+      <div class="objective-box">
+        <div class="objective-title" id="objective-title">WAVE 1: CORRUPTED VANGUARD</div>
+        <div class="objective-desc" id="objective-desc">Defeat the Fallen Soldiers (0/4)</div>
+      </div>
+
+      <!-- Boss HP Bar -->
+      <div id="boss-hud">
+        <div class="boss-title-row">
+          <span class="boss-name">THE FALLEN KING</span>
+          <span class="boss-phase-badge" id="boss-phase-text">PHASE 1 - AWAKENED</span>
+        </div>
+        <div class="boss-bar-track">
+          <div class="boss-bar-fill" id="boss-hp-fill" style="width: 100%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Combo Streak Display -->
+    <div id="combo-display">
+      <div class="combo-count" id="combo-count-text">0 HITS</div>
+      <div class="combo-rank" id="combo-rank-text">RANK S</div>
+    </div>
+
+    <!-- Bottom HUD Controls & Vitals -->
+    <div class="hud-bottom">
+      <!-- Player HP & Energy -->
+      <div class="player-vitals">
+        <div class="bar-container">
+          <div class="bar-label-row">
+            <span style="color: #ff6b6b;">HEALTH</span>
+            <span id="player-hp-text" style="color: #cbd5e1;">100 / 100</span>
+          </div>
+          <div class="bar-track">
+            <div class="hp-fill" id="player-hp-fill" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <div class="bar-container">
+          <div class="bar-label-row">
+            <span style="color: #64b5f6;">ENERGY</span>
+            <span id="player-energy-text" style="color: #cbd5e1;">100 / 100</span>
+          </div>
+          <div class="bar-track">
+            <div class="energy-fill" id="player-energy-fill" style="width: 100%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Elemental Switcher & Ability Slots -->
+      <div class="action-controls">
+        <div class="element-switcher">
+          <div class="elem-badge elem-fire active" id="elem-badge-fire">
+            <div class="elem-icon">炎</div>
+            <div class="elem-key">[1] FIRE</div>
+          </div>
+          <div class="elem-badge elem-ice" id="elem-badge-ice">
+            <div class="elem-icon">氷</div>
+            <div class="elem-key">[2] ICE</div>
+          </div>
+          <div class="elem-badge elem-storm" id="elem-badge-storm">
+            <div class="elem-icon">雷</div>
+            <div class="elem-key">[3] STORM</div>
+          </div>
+        </div>
+
+        <div class="skills-dock">
+          <!-- Skill Slot Q -->
+          <div class="skill-slot ready" id="skill-slot-q">
+            <div class="skill-name" id="skill-name-q">SKILL</div>
+            <div class="skill-key">Q</div>
+            <div class="skill-cooldown-overlay" id="skill-cd-overlay" style="display: none;">0.0</div>
+          </div>
+
+          <!-- Ultimate Slot R -->
+          <div class="skill-slot ready" id="skill-slot-r">
+            <div class="skill-name" id="skill-name-r">ULT</div>
+            <div class="skill-key">R</div>
+            <div class="skill-cooldown-overlay" id="ult-cd-overlay" style="display: none;">0.0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Context Prompts -->
+      <div class="context-prompts">
+        <div><span class="prompt-tag">L-CLICK</span> 3-Hit Combo</div>
+        <div><span class="prompt-tag">R-CLICK / E</span> Heavy Attack</div>
+        <div><span class="prompt-tag">SPACE</span> Dodge (i-frames)</div>
+        <div><span class="prompt-tag">1 / 2 / 3</span> Switch Element</div>
+        <div><span class="prompt-tag">ESC</span> Pause Menu</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TITLE SCREEN -->
+  <div id="title-screen" class="modal-screen">
+    <div class="menu-card">
+      <h1 class="menu-title">ELEMENTAL LEGENDS</h1>
+      <div class="menu-subtitle">RISE OF THE FALLEN KING</div>
+      <div class="button-stack">
+        <button class="btn-fantasy btn-primary" id="btn-start-game">START GAME</button>
+        <button class="btn-fantasy" id="btn-open-settings">SETTINGS</button>
+        <button class="btn-fantasy" id="btn-open-controls">CONTROLS</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAUSE MENU -->
+  <div id="pause-screen" class="modal-screen" style="display: none;">
+    <div class="menu-card">
+      <h2 class="menu-title">GAME PAUSED</h2>
+      <div class="menu-subtitle">BATTLE HALTED</div>
+
+      <div class="button-stack">
+        <button class="btn-fantasy btn-primary" id="btn-resume-game">RESUME</button>
+        <button class="btn-fantasy" id="btn-pause-settings">SETTINGS</button>
+        <button class="btn-fantasy" id="btn-pause-controls">CONTROLS</button>
+        <button class="btn-fantasy" id="btn-restart-game">RESTART</button>
+        <button class="btn-fantasy" id="btn-quit-to-title">MAIN MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settings-modal" class="modal-screen" style="display: none;">
+    <div class="menu-card">
+      <h2 class="menu-title">SETTINGS</h2>
+      <div class="menu-subtitle">AUDIO & GRAPHICS</div>
+
+      <div class="settings-grid">
+        <div class="setting-row">
+          <span>Master Volume</span>
+          <input type="range" id="slider-master-vol" min="0" max="1" step="0.05" value="0.8">
+        </div>
+        <div class="setting-row">
+          <span>SFX Volume</span>
+          <input type="range" id="slider-sfx-vol" min="0" max="1" step="0.05" value="0.9">
+        </div>
+        <div class="setting-row">
+          <span>BGM Volume</span>
+          <input type="range" id="slider-bgm-vol" min="0" max="1" step="0.05" value="0.5">
+        </div>
+        <div class="setting-row">
+          <span>Graphics Quality</span>
+          <select id="select-graphics">
+            <option value="high" selected>High (Shadows + Bloom)</option>
+            <option value="medium">Medium (Basic Shadows)</option>
+            <option value="low">Low (Performance Boost)</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <span>Camera Sensitivity</span>
+          <input type="range" id="slider-cam-sens" min="0.001" max="0.005" step="0.0005" value="0.0022">
+        </div>
+      </div>
+
+      <button class="btn-fantasy" id="btn-close-settings">BACK</button>
+    </div>
+  </div>
+
+  <!-- CONTROLS MODAL -->
+  <div id="controls-modal" class="modal-screen" style="display: none;">
+    <div class="menu-card" style="max-width: 680px;">
+      <h2 class="menu-title">CONTROLS</h2>
+      <div class="menu-subtitle">COMBAT GUIDE</div>
+
+      <table class="controls-table">
+        <thead>
+          <tr><th>Action</th><th>Key / Input</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Move</td><td><span class="key-badge">W</span> <span class="key-badge">A</span> <span class="key-badge">S</span> <span class="key-badge">D</span></td><td>Directional movement relative to camera</td></tr>
+          <tr><td>Camera Look</td><td><span class="key-badge">Mouse</span></td><td>Third-person orbit mouse look</td></tr>
+          <tr><td>Light Attack Combo</td><td><span class="key-badge">Left Click</span></td><td>3-hit chained combo with elemental procs</td></tr>
+          <tr><td>Heavy Attack</td><td><span class="key-badge">Right Click</span> or <span class="key-badge">E</span></td><td>High-damage overhead ground slam</td></tr>
+          <tr><td>Dodge Roll</td><td><span class="key-badge">Space</span> or <span class="key-badge">Shift</span></td><td>Fast evasive roll with invulnerability frames</td></tr>
+          <tr><td>Elemental Skill</td><td><span class="key-badge">Q</span> or <span class="key-badge">F</span></td><td>Flame Wave / Ice Spikes / Thunder Dash</td></tr>
+          <tr><td>Elemental Ultimate</td><td><span class="key-badge">R</span></td><td>Magma Cataclysm / Frost Nova / Storm Judgment</td></tr>
+          <tr><td>Switch Elements</td><td><span class="key-badge">1</span> / <span class="key-badge">2</span> / <span class="key-badge">3</span> or <span class="key-badge">Wheel</span></td><td>Instantly swap Fire, Ice, or Storm</td></tr>
+          <tr><td>Target Lock</td><td><span class="key-badge">Tab</span> / <span class="key-badge">Middle Click</span></td><td>Lock camera onto nearest enemy</td></tr>
+          <tr><td>Pause Game</td><td><span class="key-badge">ESC</span></td><td>Open pause menu</td></tr>
+        </tbody>
+      </table>
+
+      <button class="btn-fantasy" id="btn-close-controls">BACK</button>
+    </div>
+  </div>
+
+  <!-- VICTORY SCREEN -->
+  <div id="victory-screen" class="modal-screen" style="display: none;">
+    <div class="menu-card">
+      <h2 class="menu-title" style="color: #ffd700;">VICTORY</h2>
+      <div class="menu-subtitle">THE FALLEN KING IS VANQUISHED</div>
+
+      <div class="stats-summary">
+        <div class="stat-item"><span class="stat-label">Time Taken</span><span class="stat-value" id="vic-stat-time">02:14</span></div>
+        <div class="stat-item"><span class="stat-label">Max Combo</span><span class="stat-value" id="vic-stat-combo">18 HITS</span></div>
+        <div class="stat-item"><span class="stat-label">Damage Dealt</span><span class="stat-value" id="vic-stat-dmg">2450</span></div>
+        <div class="stat-item"><span class="stat-label">Elemental Mastery</span><span class="stat-value" style="color: #00e1ff;">RANK S</span></div>
+      </div>
+
+      <div class="button-stack">
+        <button class="btn-fantasy btn-primary" id="btn-victory-restart">PLAY AGAIN</button>
+        <button class="btn-fantasy" id="btn-victory-title">MAIN MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEFEAT SCREEN -->
+  <div id="defeat-screen" class="modal-screen" style="display: none;">
+    <div class="menu-card">
+      <h2 class="menu-title" style="color: #ff3b30;">FALLEN</h2>
+      <div class="menu-subtitle">YOUR SOUL WAS CONSUMED</div>
+
+      <div class="stats-summary">
+        <div class="stat-item"><span class="stat-label">Wave Reached</span><span class="stat-value" id="def-stat-wave">Wave 2</span></div>
+        <div class="stat-item"><span class="stat-label">Max Combo</span><span class="stat-value" id="def-stat-combo">12 HITS</span></div>
+        <div class="stat-item"><span class="stat-label">Damage Dealt</span><span class="stat-value" id="def-stat-dmg">1120</span></div>
+        <div class="stat-item"><span class="stat-label">Enemies Slain</span><span class="stat-value" id="def-stat-kills">6</span></div>
+      </div>
+
+      <div class="button-stack">
+        <button class="btn-fantasy btn-primary" id="btn-defeat-retry">TRY AGAIN</button>
+        <button class="btn-fantasy" id="btn-defeat-title">MAIN MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Game Script -->
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

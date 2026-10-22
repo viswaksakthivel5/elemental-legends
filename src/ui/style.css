@@ -1,0 +1,626 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@400;600;700&display=swap');
+
+:root {
+  --gold-primary: #d4af37;
+  --gold-glow: rgba(212, 175, 55, 0.5);
+  --fire-color: #ff4500;
+  --ice-color: #00d2ff;
+  --storm-color: #3a86ff;
+  --bg-dark: rgba(10, 12, 16, 0.88);
+  --border-ornate: #4a3b22;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #05070a;
+  font-family: 'Outfit', sans-serif;
+  color: #e2e8f0;
+}
+
+#canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+#game-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ================= SCREEN VIGNETTES ================= */
+#damage-vignette {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow: inset 0 0 100px rgba(220, 20, 60, 0);
+  transition: box-shadow 0.15s ease-out;
+}
+#damage-vignette.hit {
+  box-shadow: inset 0 0 120px rgba(220, 20, 60, 0.85);
+}
+
+/* ================= FLOATING DAMAGE NUMBERS ================= */
+#damage-numbers-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.dmg-number {
+  position: absolute;
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 24px;
+  text-shadow: 0 0 8px #000, 0 0 14px currentColor;
+  animation: floatFadeUp 0.85s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+.dmg-crit {
+  font-size: 34px !important;
+  color: #ffea00 !important;
+}
+
+.dmg-physical { color: #ffffff; }
+.dmg-fire { color: #ff5500; }
+.dmg-ice { color: #00e1ff; }
+.dmg-storm { color: #ffd700; }
+.dmg-void { color: #cc33ff; }
+
+@keyframes floatFadeUp {
+  0% { transform: translateY(0) scale(0.7); opacity: 0; }
+  25% { transform: translateY(-15px) scale(1.15); opacity: 1; }
+  100% { transform: translateY(-55px) scale(0.9); opacity: 0; }
+}
+
+/* ================= IN-GAME HUD ================= */
+#hud-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 32px;
+}
+
+/* --- Top Bar: Objective & Boss HP --- */
+.hud-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.objective-box {
+  background: linear-gradient(90deg, transparent, rgba(14, 18, 24, 0.85), transparent);
+  border-top: 1px solid var(--gold-primary);
+  border-bottom: 1px solid var(--gold-primary);
+  padding: 8px 36px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+
+.objective-title {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: var(--gold-primary);
+  text-transform: uppercase;
+}
+
+.objective-desc {
+  font-size: 13px;
+  color: #cbd5e1;
+  letter-spacing: 1px;
+}
+
+/* Boss Health Bar */
+#boss-hud {
+  width: 650px;
+  max-width: 90vw;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeInDown 0.8s ease;
+}
+
+.boss-title-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 4px;
+  font-family: 'Cinzel', serif;
+}
+
+.boss-name {
+  color: #ff3b30;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(255, 59, 48, 0.6);
+}
+
+.boss-phase-badge {
+  color: #f1a9a0;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.boss-bar-track {
+  width: 100%;
+  height: 18px;
+  background: rgba(18, 20, 26, 0.9);
+  border: 2px solid #5a1a1a;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 0 16px rgba(180, 20, 20, 0.4);
+}
+
+.boss-bar-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #990000, #ff2222, #990000);
+  transition: width 0.15s ease-out;
+}
+
+/* --- Center Combo Counter --- */
+#combo-display {
+  position: absolute;
+  right: 50px;
+  top: 40%;
+  display: none;
+  flex-direction: column;
+  align-items: flex-end;
+  font-family: 'Cinzel', serif;
+  transform: translateY(-50%);
+}
+
+.combo-count {
+  font-size: 48px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 0 15px var(--gold-primary);
+  line-height: 1;
+}
+
+.combo-rank {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--gold-primary);
+  margin-top: 4px;
+}
+
+/* --- Bottom Bar: Player Orbs, Element Selector, Skills --- */
+.hud-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+}
+
+/* Player Vitals (HP & Energy) */
+.player-vitals {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 320px;
+}
+
+.bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bar-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.bar-track {
+  width: 100%;
+  height: 14px;
+  background: rgba(15, 18, 24, 0.85);
+  border: 1.5px solid #3c424e;
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.hp-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #881111, #e63946);
+  box-shadow: 0 0 10px rgba(230, 57, 70, 0.6);
+  transition: width 0.15s ease;
+}
+
+.energy-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #1d3557, #457b9d, #a8dadc);
+  box-shadow: 0 0 10px rgba(69, 123, 157, 0.6);
+  transition: width 0.15s ease;
+}
+
+/* Center Abilities & Element Switcher */
+.action-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* 3 Elemental Gems */
+.element-switcher {
+  display: flex;
+  gap: 16px;
+  background: rgba(12, 14, 18, 0.7);
+  padding: 8px 16px;
+  border-radius: 30px;
+  border: 1px solid #2d3340;
+}
+
+.elem-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  opacity: 0.45;
+  transition: all 0.25s ease;
+}
+
+.elem-badge.active {
+  opacity: 1;
+  transform: scale(1.18);
+}
+
+.elem-badge.active.elem-fire .elem-icon {
+  box-shadow: 0 0 16px var(--fire-color);
+  border-color: var(--fire-color);
+}
+.elem-badge.active.elem-ice .elem-icon {
+  box-shadow: 0 0 16px var(--ice-color);
+  border-color: var(--ice-color);
+}
+.elem-badge.active.elem-storm .elem-icon {
+  box-shadow: 0 0 16px var(--storm-color);
+  border-color: var(--storm-color);
+}
+
+.elem-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #141820;
+  border: 2px solid #4a5568;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.elem-fire .elem-icon { color: var(--fire-color); }
+.elem-ice .elem-icon { color: var(--ice-color); }
+.elem-storm .elem-icon { color: var(--storm-color); }
+
+.elem-key {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+/* Skills (Q & R) */
+.skills-dock {
+  display: flex;
+  gap: 20px;
+}
+
+.skill-slot {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 8px;
+  background: rgba(18, 22, 30, 0.85);
+  border: 2px solid #3e4756;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.skill-slot.ready {
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+
+.skill-name {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.skill-key {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--gold-primary);
+  color: #0b0e14;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.skill-cooldown-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+/* Contextual Control Prompts */
+.context-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: right;
+  letter-spacing: 0.5px;
+}
+
+.prompt-tag {
+  color: var(--gold-primary);
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+/* ================= MENUS & MODALS ================= */
+.modal-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(5, 7, 10, 0.88);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.menu-card {
+  background: linear-gradient(180deg, rgba(22, 27, 36, 0.95), rgba(12, 15, 20, 0.98));
+  border: 2px solid var(--border-ornate);
+  border-radius: 12px;
+  padding: 42px 56px;
+  max-width: 620px;
+  width: 95%;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 25px rgba(212, 175, 55, 0.15);
+  position: relative;
+}
+
+.menu-title {
+  font-family: 'Cinzel Decorative', 'Cinzel', serif;
+  font-size: 40px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  text-shadow: 0 0 20px rgba(212, 175, 55, 0.7);
+}
+
+.menu-subtitle {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  letter-spacing: 5px;
+  color: var(--gold-primary);
+  margin-bottom: 28px;
+  text-transform: uppercase;
+}
+
+.menu-lore {
+  font-size: 14px;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin-bottom: 30px;
+  font-style: italic;
+}
+
+.button-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  align-items: center;
+}
+
+.btn-fantasy {
+  font-family: 'Cinzel', serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 14px 36px;
+  width: 260px;
+  background: linear-gradient(180deg, #2a313d, #171b22);
+  color: #e2e8f0;
+  border: 1.5px solid #4a5568;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-transform: uppercase;
+}
+
+.btn-fantasy:hover {
+  background: linear-gradient(180deg, #3d4756, #222832);
+  border-color: var(--gold-primary);
+  color: #ffffff;
+  box-shadow: 0 0 16px var(--gold-glow);
+  transform: translateY(-2px);
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, #8a2be2, #4b0082);
+  border-color: #ba55d3;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(180deg, #9932cc, #5d0f99);
+  box-shadow: 0 0 20px rgba(186, 85, 211, 0.6);
+}
+
+/* Settings Panels */
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #cbd5e1;
+}
+
+.setting-row input[type="range"] {
+  width: 160px;
+  accent-color: var(--gold-primary);
+  cursor: pointer;
+}
+
+.setting-row select {
+  background: #1a1e26;
+  color: #ffffff;
+  border: 1px solid #4a5568;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+}
+
+/* Controls Grid */
+.controls-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+  font-size: 13px;
+  text-align: left;
+}
+
+.controls-table th {
+  color: var(--gold-primary);
+  font-family: 'Cinzel', serif;
+  padding: 6px 10px;
+  border-bottom: 1px solid #333a46;
+}
+
+.controls-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #20252e;
+  color: #cbd5e1;
+}
+
+.key-badge {
+  display: inline-block;
+  background: #232832;
+  border: 1px solid #4a5568;
+  border-radius: 3px;
+  padding: 2px 7px;
+  font-weight: 700;
+  color: #ffffff;
+  font-size: 12px;
+}
+
+/* Stats Summary on Victory / Defeat */
+.stats-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 28px;
+  text-align: left;
+  background: rgba(10, 12, 16, 0.6);
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid #2c323e;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #94a3b8;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold-primary);
+  font-family: 'Cinzel', serif;
+}
+
+/* Animations */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
