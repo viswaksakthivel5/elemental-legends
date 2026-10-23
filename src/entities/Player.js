@@ -280,8 +280,13 @@ export class Player {
     this.targetFacingAngle = Math.atan2(moveDir.x, moveDir.z);
 
     // Procedural run cycle
+    const prevLegSwing = Math.sin(this.walkCycle);
     this.walkCycle += dt * 11.0;
     const legSwing = Math.sin(this.walkCycle);
+
+    if ((prevLegSwing <= 0 && legSwing > 0) || (prevLegSwing >= 0 && legSwing < 0)) {
+      soundManager.playFootstep();
+    }
 
     this.joints.hipL.rotation.x = legSwing * 0.65;
     this.joints.hipR.rotation.x = -legSwing * 0.65;

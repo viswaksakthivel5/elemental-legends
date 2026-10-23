@@ -103,11 +103,15 @@
         </div>
       </div>
 
+      <!-- Interaction Prompt -->
+      <div id="interaction-prompt"></div>
+
       <!-- Quick Context Prompts -->
       <div class="context-prompts">
         <div><span class="prompt-tag">L-CLICK</span> 3-Hit Combo</div>
-        <div><span class="prompt-tag">R-CLICK / E</span> Heavy Attack</div>
+        <div><span class="prompt-tag">R-CLICK</span> Heavy Attack</div>
         <div><span class="prompt-tag">SPACE</span> Dodge (i-frames)</div>
+        <div><span class="prompt-tag">E</span> Interact / Read</div>
         <div><span class="prompt-tag">1 / 2 / 3</span> Switch Element</div>
         <div><span class="prompt-tag">ESC</span> Pause Menu</div>
       </div>
@@ -118,12 +122,21 @@
   <div id="title-screen" class="modal-screen">
     <div class="menu-card">
       <h1 class="menu-title">ELEMENTAL LEGENDS</h1>
-      <div class="menu-subtitle">RISE OF THE FALLEN KING</div>
+      <div class="menu-subtitle">THE CURSE OF THE HOLLOW REALM</div>
       <div class="button-stack">
         <button class="btn-fantasy btn-primary" id="btn-start-game">START GAME</button>
         <button class="btn-fantasy" id="btn-open-settings">SETTINGS</button>
         <button class="btn-fantasy" id="btn-open-controls">CONTROLS</button>
       </div>
+    </div>
+  </div>
+
+  <!-- CLUE / LORE MODAL -->
+  <div id="clue-modal">
+    <div class="parchment-card">
+      <h3 class="clue-heading" id="clue-title-text">ANCIENT JOURNAL</h3>
+      <div class="clue-body" id="clue-content-text"></div>
+      <button class="btn-fantasy" id="btn-close-clue">CLOSE [E]</button>
     </div>
   </div>
 
@@ -184,7 +197,7 @@
   <div id="controls-modal" class="modal-screen" style="display: none;">
     <div class="menu-card" style="max-width: 680px;">
       <h2 class="menu-title">CONTROLS</h2>
-      <div class="menu-subtitle">COMBAT GUIDE</div>
+      <div class="menu-subtitle">COMBAT & EXPLORATION GUIDE</div>
 
       <table class="controls-table">
         <thead>
@@ -194,12 +207,13 @@
           <tr><td>Move</td><td><span class="key-badge">W</span> <span class="key-badge">A</span> <span class="key-badge">S</span> <span class="key-badge">D</span></td><td>Directional movement relative to camera</td></tr>
           <tr><td>Camera Look</td><td><span class="key-badge">Mouse</span></td><td>Third-person orbit mouse look</td></tr>
           <tr><td>Light Attack Combo</td><td><span class="key-badge">Left Click</span></td><td>3-hit chained combo with elemental procs</td></tr>
-          <tr><td>Heavy Attack</td><td><span class="key-badge">Right Click</span> or <span class="key-badge">E</span></td><td>High-damage overhead ground slam</td></tr>
+          <tr><td>Heavy Attack</td><td><span class="key-badge">Right Click</span></td><td>High-damage overhead ground slam</td></tr>
           <tr><td>Dodge Roll</td><td><span class="key-badge">Space</span> or <span class="key-badge">Shift</span></td><td>Fast evasive roll with invulnerability frames</td></tr>
+          <tr><td>Interact / Read Clue</td><td><span class="key-badge">E</span></td><td>Inspect journals, examine mechanisms, ignite braziers</td></tr>
           <tr><td>Elemental Skill</td><td><span class="key-badge">Q</span> or <span class="key-badge">F</span></td><td>Flame Wave / Ice Spikes / Thunder Dash</td></tr>
           <tr><td>Elemental Ultimate</td><td><span class="key-badge">R</span></td><td>Magma Cataclysm / Frost Nova / Storm Judgment</td></tr>
           <tr><td>Switch Elements</td><td><span class="key-badge">1</span> / <span class="key-badge">2</span> / <span class="key-badge">3</span> or <span class="key-badge">Wheel</span></td><td>Instantly swap Fire, Ice, or Storm</td></tr>
-          <tr><td>Target Lock</td><td><span class="key-badge">Tab</span> / <span class="key-badge">Middle Click</span></td><td>Lock camera onto nearest enemy</td></tr>
+          <tr><td>Target Lock</td><td><span class="key-badge">Tab</span> / <span class="key-badge">Middle Click</span></td><td>Lock camera onto nearest enemy or boss</td></tr>
           <tr><td>Pause Game</td><td><span class="key-badge">ESC</span></td><td>Open pause menu</td></tr>
         </tbody>
       </table>
@@ -211,8 +225,11 @@
   <!-- VICTORY SCREEN -->
   <div id="victory-screen" class="modal-screen" style="display: none;">
     <div class="menu-card">
-      <h2 class="menu-title" style="color: #ffd700;">VICTORY</h2>
-      <div class="menu-subtitle">THE FALLEN KING IS VANQUISHED</div>
+      <h2 class="menu-title" style="color: #ffd700;">REALM CLEANSED</h2>
+      <div class="menu-subtitle">THE CURSE OF THE HOLLOW REALM HAS LIFTED</div>
+      <p style="font-size: 14px; color: #cbd5e1; margin-bottom: 24px; line-height: 1.6; font-style: italic;">
+        The Hollow Guardian is slain and the primordial elemental shrine is purified. The dark mist recedes from the cursed village and forests, restoring balance to the ancient realm.
+      </p>
 
       <div class="stats-summary">
         <div class="stat-item"><span class="stat-label">Time Taken</span><span class="stat-value" id="vic-stat-time">02:14</span></div>

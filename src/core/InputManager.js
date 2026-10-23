@@ -12,13 +12,14 @@ export class InputManager {
     this.isPointerLocked = false;
     this.domElement = null;
 
-    // Combat action flags (cleared after consumed or timed out)
+    // Combat & interaction action flags (cleared after consumed or timed out)
     this.actions = {
       lightAttack: false,
       heavyAttack: false,
       dodge: false,
       skill: false,
       ultimate: false,
+      interact: false,
       lockTarget: false,
       switchFire: false,
       switchIce: false,
@@ -95,7 +96,7 @@ export class InputManager {
       this.actions.ultimate = true;
     }
     if (key === 'e') {
-      this.actions.heavyAttack = true;
+      this.actions.interact = true;
     }
     if (key === 'tab') {
       e.preventDefault();

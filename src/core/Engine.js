@@ -15,6 +15,7 @@ import { VFXManager } from '../systems/VFXManager.js';
 import { ElementalSystem } from '../systems/ElementalSystem.js';
 import { CombatSystem } from '../systems/CombatSystem.js';
 import { WaveManager } from '../systems/WaveManager.js';
+import { PuzzleManager } from '../systems/PuzzleManager.js';
 import { UIManager } from '../ui/UIManager.js';
 
 export class GameEngine {
@@ -39,13 +40,25 @@ export class GameEngine {
     this.inputManager.init(this.renderer.getDomElement());
 
     this.vfxManager = new VFXManager(this.scene, this.camera);
+    this.puzzleManager = new PuzzleManager(this.scene, this.vfxManager);
     this.elementalSystem = new ElementalSystem(this.scene, this.vfxManager);
     this.combatSystem = new CombatSystem(this.vfxManager, this.cameraManager);
-    this.world = new World(this.scene);
+    this.world = new World(this.scene, this.puzzleManager);
 
     this.player = null;
     this.waveManager = null;
     this.uiManager = new UIManager(this);
+
+    // Wire Puzzle Manager UI callbacks
+    this.puzzleManager.onPromptChange = (prompt) => {
+      this.uiManager.setInteractionPrompt(prompt);
+    };
+    this.puzzleManager.onClueOpen = (clue) => {
+      this.uiManager.showClue(clue.title, clue.text);
+    };
+    this.puzzleManager.onObjectiveUpdate = (desc) => {
+      this.uiManager.setObjective('CURRENT OBJECTIVE', desc);
+    };
 
     // Game lifecycle state
     this.gameState = 'TITLE'; // 'TITLE', 'PLAYING', 'PAUSED', 'DEFEAT', 'VICTORY'
@@ -76,15 +89,21 @@ export class GameEngine {
         this.scene.remove(this.waveManager.boss.mesh);
       }
     }
+    if (this.puzzleManager) {
+      this.puzzleManager.reset();
+    }
 
-    // Spawn new Player
+    // Spawn new Player at the start of The Forgotten Village
     this.player = new Player(this.scene);
-    this.player.position.set(0, 0, 10);
+    this.player.position.set(0, 0, 20);
     this.player.mesh.position.copy(this.player.position);
 
-    // Spawn Wave Manager
-    this.waveManager = new WaveManager(this.scene, this.vfxManager);
+    // Spawn Level 3 Adventure Progression Manager
+    this.waveManager = new WaveManager(this.scene, this.vfxManager, this.puzzleManager);
 
+    this.waveManager.onZoneObjective = (title, desc) => {
+      this.uiManager.setObjective(title, desc);
+    };
     this.waveManager.onWaveStart = (wNum, title, desc) => {
       this.uiManager.setObjective(title, desc);
     };
@@ -119,10 +138,10 @@ export class GameEngine {
     this.gameState = 'PLAYING';
     this.cameraManager.isCinematic = false;
 
-    // Start BGM and first wave
+    // Start BGM and begin Level 3 adventure
     soundManager.startBGM();
     soundManager.setCombatIntensity(1);
-    this.waveManager.startFirstWave();
+    this.waveManager.startAdventure();
 
     // Request pointer lock for immediate action
     this.inputManager.requestPointerLock();
@@ -162,6 +181,15 @@ export class GameEngine {
         return;
       }
 
+      // Check Clue & Environmental Interaction (E)
+      if (this.inputManager.consumeAction('interact')) {
+        if (this.uiManager.isClueOpen()) {
+          this.uiManager.hideClue();
+        } else {
+          this.puzzleManager.interact(this.player);
+        }
+      }
+
       // Check Target Lock Toggle
       if (this.inputManager.consumeAction('lockTarget')) {
         const aliveEnemies = this.waveManager.getAliveEnemies();
@@ -185,6 +213,7 @@ export class GameEngine {
           this.waveManager.getBoss(),
           this.cameraManager
         );
+        this.puzzleManager.checkAttackPuzzleTriggers(this.player.getPosition(), this.player.element);
       }
 
       if (this.inputManager.consumeAction('ultimate')) {
@@ -194,6 +223,12 @@ export class GameEngine {
           this.waveManager.getBoss(),
           this.cameraManager
         );
+        this.puzzleManager.checkAttackPuzzleTriggers(this.player.getPosition(), this.player.element);
+      }
+
+      // Check Melee weapon strikes triggering puzzles
+      if (this.player.isWeaponActive) {
+        this.puzzleManager.checkAttackPuzzleTriggers(this.player.getPosition(), this.player.element);
       }
 
       // Update Player
@@ -236,6 +271,14 @@ export class GameEngine {
         this.player,
         this.waveManager.getAliveEnemies(),
         this.waveManager.getBoss(),
+        this.cameraManager
+      );
+
+      // Update Environmental Puzzles & Clue Proximity
+      this.puzzleManager.update(
+        dt,
+        this.player.getPosition(),
+        this.player.element,
         this.cameraManager
       );
 

@@ -420,6 +420,57 @@ export class SoundManager {
     this._playFlameBurst(t, 0.6, 500);
   }
 
+  playFootstep() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = this._createNoiseBuffer(0.08);
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(240, t);
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.18, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+    noise.start(t);
+  }
+
+  playClueInspect() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    [520, 650, 780, 980].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t + idx * 0.08);
+      gain.gain.setValueAtTime(0.2, t + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.08 + 0.4);
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(t + idx * 0.08);
+      osc.stop(t + idx * 0.08 + 0.45);
+    });
+  }
+
+  playPuzzleSolve() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    [330, 440, 554, 660].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t + idx * 0.12);
+      gain.gain.setValueAtTime(0.35, t + idx * 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.12 + 1.2);
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(t + idx * 0.12);
+      osc.stop(t + idx * 0.12 + 1.25);
+    });
+  }
+
   playVictory() {
     if (!this.ctx) return;
     const notes = [220, 277.18, 329.63, 440, 554.37, 659.25, 880];
