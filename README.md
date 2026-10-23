@@ -93,7 +93,7 @@ Open your web browser and navigate to:
 ```
 http://localhost:5173/
 ```
-Click **ENTER THE HOLLOW REALM** on the title menu to begin!
+Click **START GAME** on the title menu to begin!
 
 ### 5. Build for Production Bundle (Verified 0 Errors)
 ```bash
