@@ -174,8 +174,9 @@ export class GameEngine {
   _loop() {
     requestAnimationFrame(this._loop);
 
-    const rawDt = this.clock.getDelta();
-    const dt = Math.min(rawDt, 0.05); // Cap delta time to prevent physics anomalies
+    try {
+      const rawDt = this.clock.getDelta();
+      const dt = Math.min(rawDt, 0.05); // Cap delta time to prevent physics anomalies
 
     if (this.gameState === 'PLAYING') {
       this.totalGameTime += dt;
@@ -319,5 +320,8 @@ export class GameEngine {
 
     // Render Scene with Bloom Post-Processing
     this.renderer.render(this.scene, this.camera);
+    } catch (err) {
+      console.error('[Elemental Legends] Loop error:', err);
+    }
   }
 }

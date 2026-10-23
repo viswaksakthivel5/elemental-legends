@@ -82,7 +82,13 @@ export class GameRenderer {
 
   render(scene, camera) {
     if (this.isBloomEnabled && this.composer) {
-      this.composer.render();
+      try {
+        this.composer.render();
+      } catch (e) {
+        console.warn('EffectComposer render failed, falling back to standard WebGLRenderer:', e);
+        this.isBloomEnabled = false;
+        this.renderer.render(scene, camera);
+      }
     } else {
       this.renderer.render(scene, camera);
     }

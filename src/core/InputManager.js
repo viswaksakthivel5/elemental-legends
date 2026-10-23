@@ -53,7 +53,12 @@ export class InputManager {
   requestPointerLock() {
     if (this.domElement && !this.isPointerLocked) {
       try {
-        this.domElement.requestPointerLock();
+        const p = this.domElement.requestPointerLock();
+        if (p && typeof p.catch === 'function') {
+          p.catch(() => {
+            // Pointer lock might require direct canvas click in some browsers
+          });
+        }
       } catch (e) {
         console.warn('Pointer lock request error:', e);
       }
