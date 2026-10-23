@@ -45,7 +45,11 @@ export class GameEngine {
     this.combatSystem = new CombatSystem(this.vfxManager, this.cameraManager);
     this.world = new World(this.scene, this.puzzleManager);
 
-    this.player = null;
+    this.player = new Player(this.scene);
+    this.player.position.set(0, 0, 20);
+    this.player.mesh.position.copy(this.player.position);
+    this.cameraManager.snapToTarget(this.player.getPosition());
+
     this.waveManager = null;
     this.uiManager = new UIManager(this);
 
@@ -97,6 +101,7 @@ export class GameEngine {
     this.player = new Player(this.scene);
     this.player.position.set(0, 0, 20);
     this.player.mesh.position.copy(this.player.position);
+    this.cameraManager.snapToTarget(this.player.getPosition());
 
     // Spawn Level 3 Adventure Progression Manager
     this.waveManager = new WaveManager(this.scene, this.vfxManager, this.puzzleManager);
@@ -300,12 +305,15 @@ export class GameEngine {
       this.vfxManager.update(dt);
 
       if (this.player) {
-        this.cameraManager.update(dt, this.player.getPosition(), this.inputManager);
-      } else {
-        // Orbit around arena center
-        const dummyPos = new THREE.Vector3(0, 1.5, 0);
-        this.cameraManager.yaw += dt * 0.15;
-        this.cameraManager.update(dt, dummyPos, this.inputManager);
+        if (this.gameState === 'TITLE') {
+          // Slow cinematic orbit showcasing warrior and misty fortress village
+          this.cameraManager.yaw += dt * 0.22;
+          this.cameraManager.pitch = 0.16;
+          this.cameraManager.targetDistance = 4.0;
+          this.cameraManager.update(dt, this.player.getPosition(), this.inputManager);
+        } else {
+          this.cameraManager.update(dt, this.player.getPosition(), this.inputManager);
+        }
       }
     }
 

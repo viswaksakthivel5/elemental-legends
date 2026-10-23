@@ -37,6 +37,27 @@ export class CameraManager {
     this.cinematicTime = 0;
   }
 
+  snapToTarget(playerPosition) {
+    this.target.set(playerPosition.x, playerPosition.y + 1.4, playerPosition.z);
+    this.yaw = 0;
+    this.pitch = 0.22;
+    this.distance = 4.8;
+    this.targetDistance = 4.8;
+
+    const cosPitch = Math.cos(this.pitch);
+    const sinPitch = Math.sin(this.pitch);
+    const sinYaw = Math.sin(this.yaw);
+    const cosYaw = Math.cos(this.yaw);
+
+    this.currentPosition.set(
+      this.target.x + this.distance * sinYaw * cosPitch,
+      this.target.y + this.distance * sinPitch,
+      this.target.z + this.distance * cosYaw * cosPitch
+    );
+    this.camera.position.copy(this.currentPosition);
+    this.camera.lookAt(this.target);
+  }
+
   update(dt, playerPosition, inputManager) {
     // Process mouse rotation
     const { dx, dy } = inputManager.consumeMouseDelta();

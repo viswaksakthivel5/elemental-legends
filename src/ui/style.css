@@ -428,7 +428,7 @@ body, html {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(5, 7, 10, 0.88);
+  background: rgba(5, 7, 10, 0.85);
   backdrop-filter: blur(8px);
   z-index: 100;
   display: flex;
@@ -436,6 +436,11 @@ body, html {
   align-items: center;
   justify-content: center;
   padding: 24px;
+}
+
+#title-screen {
+  background: radial-gradient(circle at center, rgba(14, 20, 30, 0.35) 0%, rgba(8, 12, 18, 0.65) 100%);
+  backdrop-filter: blur(2px);
 }
 
 .menu-card {

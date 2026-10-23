@@ -24,13 +24,15 @@ export class World {
   }
 
   init() {
-    // 1. Dark Fantasy Horror Fog
-    this.scene.fog = new THREE.FogExp2(0x0a0e14, 0.024);
+    // 1. Atmospheric Mountain Mist (Matching Reference Photo - Soft Cold Fog with High Near-Field Visibility)
+    const fogColor = 0x6e7f91;
+    this.scene.background = new THREE.Color(fogColor);
+    this.scene.fog = new THREE.Fog(fogColor, 18, 95);
 
-    // 2. Atmospheric Lighting
+    // 2. Cinematic Overcast Daylight Lighting (Prevents any pitch-black dark surroundings)
     this._setupLighting();
 
-    // 3. Terrain & Ground Paths
+    // 3. Terrain & Muddy Cobblestone Road
     this._createTerrain();
 
     // 4. Build Zone 1: The Forgotten Village (Z: 28 to 5)
@@ -45,18 +47,18 @@ export class World {
     // 7. Build Zone 4: The Ruined Fortress (Z: -25 to -50)
     this._buildRuinedFortress();
 
-    // 8. Stormy Sky Dome
+    // 8. Stormy Mist Sky Dome
     this._createSkyDome();
   }
 
   _setupLighting() {
-    // Dim, moody ambient moonlight
-    const ambient = new THREE.AmbientLight(0x18202c, 0.75);
+    // 1. Soft, high-visibility overcast ambient skylight
+    const ambient = new THREE.AmbientLight(0xabc0d4, 1.85);
     this.scene.add(ambient);
 
-    // Moonlight directional light casting long ominous shadows
-    this.dirLight = new THREE.DirectionalLight(0x8faec9, 1.25);
-    this.dirLight.position.set(30, 45, 15);
+    // 2. Primary directional sunlight penetrating through mist
+    this.dirLight = new THREE.DirectionalLight(0xf2f7fc, 2.2);
+    this.dirLight.position.set(25, 45, 15);
     this.dirLight.castShadow = true;
     this.dirLight.shadow.mapSize.width = 2048;
     this.dirLight.shadow.mapSize.height = 2048;
@@ -70,25 +72,46 @@ export class World {
     this.dirLight.shadow.camera.bottom = -d;
     this.dirLight.shadow.bias = -0.0006;
     this.scene.add(this.dirLight);
+
+    // 3. Secondary Rim / Back light for crisp character & tree silhouettes
+    const rimLight = new THREE.DirectionalLight(0x8ba2b8, 1.3);
+    rimLight.position.set(-25, 30, -25);
+    this.scene.add(rimLight);
+
+    // 4. Front fill light so character face, fur collar, and chest gambeson are crystal clear
+    const frontFill = new THREE.DirectionalLight(0xdde6f0, 0.85);
+    frontFill.position.set(0, 15, 35);
+    this.scene.add(frontFill);
   }
 
   _createTerrain() {
-    // Muddy road / cobblestone flagstone canvas texture
+    // Muddy gravel and stone road texture
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = '#171a20';
+    ctx.fillStyle = '#3a434d';
     ctx.fillRect(0, 0, 512, 512);
 
-    // Muddy path speckling
-    for (let i = 0; i < 4000; i++) {
+    // Gravel, stone, and earth speckling
+    for (let i = 0; i < 5000; i++) {
       const x = Math.random() * 512;
       const y = Math.random() * 512;
-      const c = Math.floor(Math.random() * 24);
-      ctx.fillStyle = `rgb(${18 + c}, ${22 + c}, ${26 + c})`;
-      ctx.fillRect(x, y, 3, 3);
+      const c = Math.floor(Math.random() * 45);
+      ctx.fillStyle = `rgb(${48 + c}, ${56 + c}, ${64 + c})`;
+      ctx.fillRect(x, y, 2 + Math.random() * 3, 2 + Math.random() * 3);
+    }
+
+    // Puddle wet patches
+    for (let i = 0; i < 18; i++) {
+      const px = Math.random() * 480;
+      const py = Math.random() * 480;
+      const rad = 15 + Math.random() * 30;
+      ctx.beginPath();
+      ctx.arc(px, py, rad, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(28, 34, 40, 0.55)';
+      ctx.fill();
     }
 
     const groundTex = new THREE.CanvasTexture(canvas);
@@ -101,8 +124,8 @@ export class World {
 
     const groundMat = new THREE.MeshStandardMaterial({
       map: groundTex,
-      roughness: 0.88,
-      metalness: 0.15
+      roughness: 0.72,
+      metalness: 0.12
     });
 
     const ground = new THREE.Mesh(groundGeom, groundMat);
@@ -313,11 +336,12 @@ export class World {
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
+    // Misty mountain overcast gradient (Matching Reference Photo)
     const grad = ctx.createLinearGradient(0, 0, 0, 512);
-    grad.addColorStop(0, '#030508');
-    grad.addColorStop(0.4, '#080c14');
-    grad.addColorStop(0.75, '#121824');
-    grad.addColorStop(1, '#1e2430');
+    grad.addColorStop(0, '#2e3a47');   // Dark slate overcast zenith
+    grad.addColorStop(0.35, '#4a5b6c'); // Cool atmospheric cloud layer
+    grad.addColorStop(0.7, '#6b7d8f');  // Misty mountain haze
+    grad.addColorStop(1, '#8e9fac');   // Pale cold horizon mist
 
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 512, 512);

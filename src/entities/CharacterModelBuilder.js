@@ -64,59 +64,179 @@ export class CharacterModelBuilder {
     return tex;
   }
 
-  // --- BUILD REALISTIC MEDIEVAL WARRIOR HERO ---
+  // Light ash-grey / silver quilted gambeson texture (Matching Reference Photo)
+  static getQuiltedGambesonTexture() {
+    if (this.cachedTextures['gambeson']) return this.cachedTextures['gambeson'];
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Light silver-grey fabric base
+    ctx.fillStyle = '#c6cfd8';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Subtle fabric weave noise
+    for (let i = 0; i < 8000; i++) {
+      const x = Math.random() * 512;
+      const y = Math.random() * 512;
+      const c = Math.floor(Math.random() * 20);
+      ctx.fillStyle = `rgba(${175 + c}, ${185 + c}, ${195 + c}, 0.35)`;
+      ctx.fillRect(x, y, 2, 2);
+    }
+
+    // Quilted diamond stitch grid lines
+    ctx.strokeStyle = '#8f9ba8';
+    ctx.lineWidth = 1.5;
+    for (let i = -512; i < 1024; i += 32) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i + 512, 512);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(i, 512);
+      ctx.lineTo(i + 512, 0);
+      ctx.stroke();
+    }
+
+    // Central vertical leather seam / chevron stitching
+    ctx.strokeStyle = '#48382c';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(256, 0);
+    ctx.lineTo(256, 512);
+    ctx.stroke();
+
+    for (let y = 16; y < 512; y += 40) {
+      // Chevron stitches
+      ctx.beginPath();
+      ctx.moveTo(240, y - 8);
+      ctx.lineTo(256, y);
+      ctx.lineTo(272, y - 8);
+      ctx.stroke();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    this.cachedTextures['gambeson'] = tex;
+    return tex;
+  }
+
+  // Thick textured wolf fur texture with frosted silver tips (Matching Reference Photo)
+  static getFurTexture() {
+    if (this.cachedTextures['wolfFur']) return this.cachedTextures['wolfFur'];
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Dark grey-brown wolf fur undercoat
+    ctx.fillStyle = '#3c3530';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Thousands of fibrous fur streaks with silver/white frosted tips
+    for (let i = 0; i < 9000; i++) {
+      const x = Math.random() * 512;
+      const y = Math.random() * 512;
+      const len = 6 + Math.random() * 14;
+      const angle = (Math.PI / 2) + (Math.random() - 0.5) * 0.6; // mostly downward fur flow
+
+      const isTip = Math.random() > 0.45;
+      ctx.strokeStyle = isTip ? `rgba(180, 175, 170, 0.45)` : `rgba(35, 30, 26, 0.6)`;
+      ctx.lineWidth = 1 + Math.random() * 1.5;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len);
+      ctx.stroke();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    this.cachedTextures['wolfFur'] = tex;
+    return tex;
+  }
+
+  // --- BUILD REALISTIC MEDIEVAL WARRIOR HERO (Matching Reference Photo) ---
   static buildHero() {
     const root = new THREE.Group();
     root.name = 'RealisticWarrior';
 
-    // Premium realistic materials
+    // Materials tailored to match the user's reference photo
     const steelMat = new THREE.MeshStandardMaterial({
-      color: 0x484f58,
-      roughness: 0.32,
-      metalness: 0.88
-    });
-
-    const darkSteelMat = new THREE.MeshStandardMaterial({
-      color: 0x22262c,
-      roughness: 0.4,
+      color: 0x6e7682,
+      roughness: 0.25,
       metalness: 0.92
     });
 
+    const darkSteelMat = new THREE.MeshStandardMaterial({
+      color: 0x323842,
+      roughness: 0.35,
+      metalness: 0.9
+    });
+
     const leatherMat = new THREE.MeshStandardMaterial({
-      color: 0x3a281e,
-      roughness: 0.75,
+      color: 0x422c20,
+      roughness: 0.68,
       metalness: 0.15,
       map: this.getLeatherTexture()
     });
 
-    const clothMat = new THREE.MeshStandardMaterial({
-      color: 0x2a2f38,
+    // Light ash-grey / silver quilted gambeson tunic (Distinctive feature in reference image)
+    const gambesonMat = new THREE.MeshStandardMaterial({
+      color: 0xcfd6df,
+      roughness: 0.68,
+      metalness: 0.08,
+      map: this.getQuiltedGambesonTexture()
+    });
+
+    // Dark charcoal pants fabric
+    const pantsMat = new THREE.MeshStandardMaterial({
+      color: 0x242830,
       roughness: 0.85,
       metalness: 0.05,
       map: this.getClothTexture()
     });
 
+    // Thick textured wolf fur mantle (Prominent feature in reference image)
     const furMat = new THREE.MeshStandardMaterial({
-      color: 0x423832,
+      color: 0x50453e,
       roughness: 0.95,
-      metalness: 0.05
+      metalness: 0.02,
+      map: this.getFurTexture()
     });
 
+    // Realistic human skin tone (Clear, healthy European/Caucasian flesh tone)
     const skinMat = new THREE.MeshStandardMaterial({
-      color: 0xc89d7c,
+      color: 0xdeb396,
+      roughness: 0.58,
+      metalness: 0.04
+    });
+
+    // Dark groomed hair
+    const hairMat = new THREE.MeshStandardMaterial({
+      color: 0x1f1915,
+      roughness: 0.78
+    });
+
+    // Trimmed jaw stubble / beard
+    const stubbleMat = new THREE.MeshStandardMaterial({
+      color: 0x2c221c,
+      roughness: 0.88
+    });
+
+    // Royal blue inner tunic collar (Visible under fur in reference image)
+    const blueCollarMat = new THREE.MeshStandardMaterial({
+      color: 0x1f3c64,
       roughness: 0.65,
       metalness: 0.05
     });
 
-    const hairMat = new THREE.MeshStandardMaterial({
-      color: 0x1c1612,
-      roughness: 0.85
-    });
-
     const brassMat = new THREE.MeshStandardMaterial({
-      color: 0x9e7f3b,
-      roughness: 0.35,
-      metalness: 0.9
+      color: 0xa8873d,
+      roughness: 0.3,
+      metalness: 0.92
     });
 
     const runeMat = new THREE.MeshStandardMaterial({
@@ -131,173 +251,256 @@ export class CharacterModelBuilder {
     hips.position.y = 0.98;
     root.add(hips);
 
-    // Leather belt and lower gambeson tunic skirt
+    // Double dark leather belt with brass buckle
     const beltGeom = new THREE.CylinderGeometry(0.24, 0.25, 0.14, 12);
     const belt = new THREE.Mesh(beltGeom, leatherMat);
     belt.castShadow = true;
     hips.add(belt);
 
-    // Brass Belt Buckle
-    const buckleGeom = new THREE.BoxGeometry(0.08, 0.09, 0.03);
-    const buckle = new THREE.Mesh(buckleGeom, brassMat);
-    buckle.position.set(0, 0, 0.25);
-    hips.add(buckle);
+    // Brass Belt Buckles (Double buckle set matching photo)
+    const buckleGeom = new THREE.BoxGeometry(0.08, 0.06, 0.03);
+    const buckle1 = new THREE.Mesh(buckleGeom, brassMat);
+    buckle1.position.set(0.04, 0.02, 0.25);
+    hips.add(buckle1);
 
-    // Tunic Skirt (flared medieval gambeson hem)
+    const buckle2 = new THREE.Mesh(buckleGeom, brassMat);
+    buckle2.position.set(-0.05, -0.03, 0.25);
+    hips.add(buckle2);
+
+    // Hanging leather belt strap tail
+    const beltTailGeom = new THREE.BoxGeometry(0.04, 0.26, 0.02);
+    beltTailGeom.translate(0, -0.13, 0);
+    const beltTail = new THREE.Mesh(beltTailGeom, leatherMat);
+    beltTail.position.set(0.04, -0.05, 0.26);
+    hips.add(beltTail);
+
+    // Lower Gambeson Tunic Skirt (Light Ash-Grey hem with central slit)
     const tunicSkirtGeom = new THREE.CylinderGeometry(0.25, 0.32, 0.32, 12, 1, true);
     tunicSkirtGeom.translate(0, -0.16, 0);
-    const tunicSkirt = new THREE.Mesh(tunicSkirtGeom, clothMat);
+    const tunicSkirt = new THREE.Mesh(tunicSkirtGeom, gambesonMat);
     tunicSkirt.castShadow = true;
     hips.add(tunicSkirt);
-
-    // Scabbard on left hip
-    const scabbardGeom = new THREE.BoxGeometry(0.06, 0.95, 0.03);
-    scabbardGeom.rotateZ(-0.25);
-    scabbardGeom.translate(0.24, -0.25, 0);
-    const scabbard = new THREE.Mesh(scabbardGeom, leatherMat);
-    hips.add(scabbard);
 
     // 2. Spine / Torso
     const spine = new THREE.Group();
     spine.position.y = 0.12;
     hips.add(spine);
 
-    // Quilted gambeson chest
-    const chestGeom = new THREE.CylinderGeometry(0.26, 0.23, 0.44, 10);
-    chestGeom.translate(0, 0.22, 0);
-    const chest = new THREE.Mesh(chestGeom, clothMat);
+    // Light Ash-Grey Quilted Gambeson Torso (Main garment in reference photo)
+    const chestGeom = new THREE.CylinderGeometry(0.27, 0.23, 0.46, 12);
+    chestGeom.translate(0, 0.23, 0);
+    const chest = new THREE.Mesh(chestGeom, gambesonMat);
     chest.castShadow = true;
     spine.add(chest);
 
-    // Weathered dark steel cuirass (chestplate plate armor)
-    const breastplateGeom = new THREE.BoxGeometry(0.38, 0.36, 0.22);
-    breastplateGeom.translate(0, 0.24, 0.04);
-    const breastplate = new THREE.Mesh(breastplateGeom, darkSteelMat);
-    breastplate.castShadow = true;
-    spine.add(breastplate);
+    // Diagonal Cross-Chest Leather Baldric Harness with Brass Buckle
+    const baldricGeom = new THREE.BoxGeometry(0.07, 0.48, 0.26);
+    baldricGeom.rotateZ(0.52);
+    baldricGeom.translate(0, 0.24, 0);
+    const baldric = new THREE.Mesh(baldricGeom, leatherMat);
+    spine.add(baldric);
 
-    // Cross-body leather baldric harness
-    const strapGeom = new THREE.BoxGeometry(0.07, 0.48, 0.25);
-    strapGeom.rotateZ(0.5);
-    strapGeom.translate(0, 0.24, 0);
-    const strap = new THREE.Mesh(strapGeom, leatherMat);
-    spine.add(strap);
+    const baldricBuckleGeom = new THREE.BoxGeometry(0.075, 0.08, 0.03);
+    const baldricBuckle = new THREE.Mesh(baldricBuckleGeom, brassMat);
+    baldricBuckle.position.set(0.06, 0.28, 0.15);
+    baldricBuckle.rotation.z = -0.52;
+    spine.add(baldricBuckle);
 
     // Runic elemental crest on chest
-    const crestGeom = new THREE.OctahedronGeometry(0.045);
+    const crestGeom = new THREE.OctahedronGeometry(0.04);
     const crest = new THREE.Mesh(crestGeom, runeMat);
-    crest.position.set(0, 0.28, 0.16);
+    crest.position.set(0, 0.25, 0.16);
     spine.add(crest);
 
-    // --- THICK FUR MANTLE / COLLAR (matching reference photo) ---
-    const furCollarGroup = new THREE.Group();
-    furCollarGroup.position.set(0, 0.42, 0);
+    // --- BACK-MOUNTED SHEATHED SWORD & SCABBARD (Matching Reference Photo) ---
+    const backSwordGroup = new THREE.Group();
+    backSwordGroup.position.set(-0.06, 0.25, -0.15);
+    backSwordGroup.rotation.set(0.18, -0.1, -0.62); // Angled diagonally over right shoulder
 
-    const furMainGeom = new THREE.TorusGeometry(0.25, 0.12, 8, 16);
+    const backScabbardGeom = new THREE.BoxGeometry(0.05, 0.95, 0.026);
+    const backScabbard = new THREE.Mesh(backScabbardGeom, leatherMat);
+    backSwordGroup.add(backScabbard);
+
+    const backLocketGeom = new THREE.BoxGeometry(0.056, 0.08, 0.03);
+    const backLocket = new THREE.Mesh(backLocketGeom, steelMat);
+    backLocket.position.y = 0.44;
+    backSwordGroup.add(backLocket);
+
+    // Steel crossguard rising above right shoulder
+    const backGuardGeom = new THREE.BoxGeometry(0.22, 0.028, 0.038);
+    backGuardGeom.translate(0, 0.50, 0);
+    const backGuard = new THREE.Mesh(backGuardGeom, steelMat);
+    backSwordGroup.add(backGuard);
+
+    // Leather-wrapped hilt
+    const backGripGeom = new THREE.CylinderGeometry(0.016, 0.018, 0.20, 8);
+    backGripGeom.translate(0, 0.60, 0);
+    const backGrip = new THREE.Mesh(backGripGeom, darkSteelMat);
+    backSwordGroup.add(backGrip);
+
+    // Faceted steel/brass pommel
+    const backPommelGeom = new THREE.DodecahedronGeometry(0.034, 0);
+    backPommelGeom.translate(0, 0.72, 0);
+    const backPommel = new THREE.Mesh(backPommelGeom, brassMat);
+    backSwordGroup.add(backPommel);
+
+    spine.add(backSwordGroup);
+
+    // --- PROMINENT WOLF FUR MANTLE / COLLAR (Matching Reference Photo) ---
+    const furCollarGroup = new THREE.Group();
+    furCollarGroup.position.set(0, 0.44, 0);
+
+    // Large main neck ruff
+    const furMainGeom = new THREE.TorusGeometry(0.26, 0.14, 10, 20);
     furMainGeom.rotateX(Math.PI / 2);
     const furCollar = new THREE.Mesh(furMainGeom, furMat);
     furCollar.castShadow = true;
     furCollarGroup.add(furCollar);
 
-    // Left & Right fur shoulder drapes
-    const furShoulderGeom = new THREE.SphereGeometry(0.14, 8, 6);
-    furShoulderGeom.scale(1.2, 0.8, 1.4);
+    // Left & Right voluminous fur shoulder cowls
+    const furShoulderGeom = new THREE.SphereGeometry(0.18, 10, 8);
+    furShoulderGeom.scale(1.3, 0.85, 1.4);
+
     const furL = new THREE.Mesh(furShoulderGeom, furMat);
-    furL.position.set(0.26, -0.02, 0);
+    furL.position.set(0.28, -0.04, 0);
+    furL.castShadow = true;
     furCollarGroup.add(furL);
 
     const furR = new THREE.Mesh(furShoulderGeom, furMat);
-    furR.position.set(-0.26, -0.02, 0);
+    furR.position.set(-0.28, -0.04, 0);
+    furR.castShadow = true;
     furCollarGroup.add(furR);
+
+    // Front chest fur bib
+    const furBibGeom = new THREE.SphereGeometry(0.16, 8, 6);
+    furBibGeom.scale(1.2, 0.7, 0.9);
+    const furBib = new THREE.Mesh(furBibGeom, furMat);
+    furBib.position.set(0, -0.08, 0.14);
+    furCollarGroup.add(furBib);
 
     spine.add(furCollarGroup);
 
-    // 3. Head & Natural Facial Sculpt
+    // 3. Head & Natural Human Facial Sculpt (Matching Reference Photo)
     const head = new THREE.Group();
-    head.position.y = 0.48;
+    head.position.y = 0.50;
     spine.add(head);
 
+    // High Royal Blue Inner Collar (visible under the fur)
+    const blueCollarGeom = new THREE.CylinderGeometry(0.096, 0.106, 0.10, 10);
+    blueCollarGeom.translate(0, 0.08, 0);
+    const blueCollar = new THREE.Mesh(blueCollarGeom, blueCollarMat);
+    head.add(blueCollar);
+
     // Neck
-    const neckGeom = new THREE.CylinderGeometry(0.085, 0.1, 0.14, 8);
-    neckGeom.translate(0, 0.05, 0);
+    const neckGeom = new THREE.CylinderGeometry(0.085, 0.098, 0.14, 8);
+    neckGeom.translate(0, 0.06, 0);
     const neck = new THREE.Mesh(neckGeom, skinMat);
     head.add(neck);
 
-    // Head Cranium
-    const skullGeom = new THREE.SphereGeometry(0.13, 12, 10);
-    skullGeom.scale(0.9, 1.1, 1.0);
-    skullGeom.translate(0, 0.2, 0);
+    // Head Cranium & Face
+    const skullGeom = new THREE.SphereGeometry(0.13, 14, 12);
+    skullGeom.scale(0.88, 1.12, 1.0);
+    skullGeom.translate(0, 0.20, 0);
     const skull = new THREE.Mesh(skullGeom, skinMat);
     skull.castShadow = true;
     head.add(skull);
 
-    // Jawline & Chin
-    const jawGeom = new THREE.BoxGeometry(0.13, 0.12, 0.14);
-    jawGeom.translate(0, 0.14, 0.04);
+    // Masculine Jawline & Chin
+    const jawGeom = new THREE.BoxGeometry(0.125, 0.11, 0.135);
+    jawGeom.translate(0, 0.135, 0.04);
     const jaw = new THREE.Mesh(jawGeom, skinMat);
     head.add(jaw);
 
-    // Rugged Medieval Hair & Stubble / Beard
-    const hairGeom = new THREE.SphereGeometry(0.142, 10, 8);
-    hairGeom.scale(0.95, 1.12, 1.05);
-    hairGeom.translate(0, 0.23, -0.01);
-    const hair = new THREE.Mesh(hairGeom, hairMat);
-    head.add(hair);
+    // Realistic Nose Bridge & Tip
+    const noseGeom = new THREE.ConeGeometry(0.024, 0.065, 5);
+    noseGeom.rotateX(-0.35);
+    noseGeom.translate(0, 0.19, 0.14);
+    const nose = new THREE.Mesh(noseGeom, skinMat);
+    head.add(nose);
 
-    const beardGeom = new THREE.BoxGeometry(0.14, 0.09, 0.12);
-    beardGeom.translate(0, 0.12, 0.06);
-    const beard = new THREE.Mesh(beardGeom, hairMat);
-    head.add(beard);
-
-    // Forehead furrow & brow
-    const browGeom = new THREE.BoxGeometry(0.14, 0.035, 0.06);
-    browGeom.translate(0, 0.22, 0.11);
+    // Brow Ridge
+    const browGeom = new THREE.BoxGeometry(0.13, 0.03, 0.06);
+    browGeom.translate(0, 0.225, 0.105);
     const brow = new THREE.Mesh(browGeom, skinMat);
     head.add(brow);
 
+    // Left and Right Eyes with Dark Eyelids
+    const eyeGeom = new THREE.SphereGeometry(0.016, 6, 6);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1a2634 });
+
+    const eyeL = new THREE.Mesh(eyeGeom, eyeMat);
+    eyeL.position.set(0.042, 0.205, 0.115);
+    head.add(eyeL);
+
+    const eyeR = new THREE.Mesh(eyeGeom, eyeMat);
+    eyeR.position.set(-0.042, 0.205, 0.115);
+    head.add(eyeR);
+
+    // Left and Right Ears
+    const earGeom = new THREE.BoxGeometry(0.02, 0.05, 0.03);
+    const earL = new THREE.Mesh(earGeom, skinMat);
+    earL.position.set(0.12, 0.19, 0.01);
+    head.add(earL);
+
+    const earR = new THREE.Mesh(earGeom, skinMat);
+    earR.position.set(-0.12, 0.19, 0.01);
+    head.add(earR);
+
+    // Styled Dark Swept-Back Hair (Matching Reference Photo)
+    const hairGeom = new THREE.SphereGeometry(0.144, 12, 10);
+    hairGeom.scale(0.92, 1.15, 1.08);
+    hairGeom.translate(0, 0.235, -0.015);
+    const hair = new THREE.Mesh(hairGeom, hairMat);
+    head.add(hair);
+
+    // Hair Top Volume Puff
+    const hairTopGeom = new THREE.BoxGeometry(0.14, 0.06, 0.16);
+    hairTopGeom.translate(0, 0.32, -0.01);
+    const hairTop = new THREE.Mesh(hairTopGeom, hairMat);
+    head.add(hairTop);
+
+    // Trimmed Stubble / Beard along Jawline & Lip (Matching Reference Photo)
+    const beardGeom = new THREE.BoxGeometry(0.132, 0.085, 0.125);
+    beardGeom.translate(0, 0.12, 0.06);
+    const beard = new THREE.Mesh(beardGeom, stubbleMat);
+    head.add(beard);
+
     // 4. Cloak / Cape (hanging from under fur collar)
-    const capeGeom = new THREE.PlaneGeometry(0.65, 1.25, 4, 8);
+    const capeGeom = new THREE.PlaneGeometry(0.68, 1.25, 4, 8);
     capeGeom.translate(0, -0.62, 0);
     const capeMat = new THREE.MeshStandardMaterial({
-      color: 0x1f2228,
+      color: 0x1f232b,
       roughness: 0.9,
-      metalness: 0.05,
+      metalness: 0.04,
       side: THREE.DoubleSide
     });
     const cape = new THREE.Mesh(capeGeom, capeMat);
-    cape.position.set(0, 0.4, -0.16);
+    cape.position.set(0, 0.4, -0.17);
     cape.rotation.x = 0.08;
     cape.castShadow = true;
     spine.add(cape);
 
-    // 5. Left Arm
+    // 5. Left Arm (Light-Grey Gambeson Sleeve + Dark Leather Vambrace)
     const shoulderL = new THREE.Group();
     shoulderL.position.set(0.32, 0.38, 0);
     spine.add(shoulderL);
 
-    // Steel pauldron with leather strap
-    const pauldronGeom = new THREE.SphereGeometry(0.12, 8, 8);
-    pauldronGeom.scale(1.1, 0.8, 1.2);
-    const pauldronL = new THREE.Mesh(pauldronGeom, darkSteelMat);
-    pauldronL.position.set(0.04, 0.02, 0);
-    shoulderL.add(pauldronL);
-
-    const upperArmGeom = new THREE.CylinderGeometry(0.07, 0.06, 0.3, 8);
+    const upperArmGeom = new THREE.CylinderGeometry(0.072, 0.064, 0.3, 8);
     upperArmGeom.translate(0, -0.15, 0);
-    const upperArmL = new THREE.Mesh(upperArmGeom, clothMat);
+    const upperArmL = new THREE.Mesh(upperArmGeom, gambesonMat);
     shoulderL.add(upperArmL);
 
     const elbowL = new THREE.Group();
     elbowL.position.set(0, -0.3, 0);
     shoulderL.add(elbowL);
 
-    // Leather-reinforced vambrace / gauntlet
-    const forearmGeom = new THREE.CylinderGeometry(0.062, 0.052, 0.28, 8);
+    // Dark leather vambrace with segmented metal plates
+    const forearmGeom = new THREE.CylinderGeometry(0.064, 0.054, 0.28, 8);
     forearmGeom.translate(0, -0.14, 0);
     const forearmL = new THREE.Mesh(forearmGeom, leatherMat);
     elbowL.add(forearmL);
 
-    const gauntletPlateGeom = new THREE.BoxGeometry(0.09, 0.2, 0.03);
+    const gauntletPlateGeom = new THREE.BoxGeometry(0.09, 0.20, 0.025);
     gauntletPlateGeom.translate(0, -0.14, 0.04);
     const gauntletPlateL = new THREE.Mesh(gauntletPlateGeom, steelMat);
     elbowL.add(gauntletPlateL);
@@ -315,11 +518,7 @@ export class CharacterModelBuilder {
     shoulderR.position.set(-0.32, 0.38, 0);
     spine.add(shoulderR);
 
-    const pauldronR = new THREE.Mesh(pauldronGeom, darkSteelMat);
-    pauldronR.position.set(-0.04, 0.02, 0);
-    shoulderR.add(pauldronR);
-
-    const upperArmR = new THREE.Mesh(upperArmGeom, clothMat);
+    const upperArmR = new THREE.Mesh(upperArmGeom, gambesonMat);
     shoulderR.add(upperArmR);
 
     const elbowR = new THREE.Group();
@@ -346,7 +545,7 @@ export class CharacterModelBuilder {
 
     const thighGeom = new THREE.CylinderGeometry(0.1, 0.08, 0.44, 8);
     thighGeom.translate(0, -0.22, 0);
-    const thighL = new THREE.Mesh(thighGeom, clothMat);
+    const thighL = new THREE.Mesh(thighGeom, pantsMat);
     thighL.castShadow = true;
     hipL.add(thighL);
 
@@ -378,7 +577,7 @@ export class CharacterModelBuilder {
     hipR.position.set(-0.14, -0.06, 0);
     hips.add(hipR);
 
-    const thighR = new THREE.Mesh(thighGeom, clothMat);
+    const thighR = new THREE.Mesh(thighGeom, pantsMat);
     thighR.castShadow = true;
     hipR.add(thighR);
 
