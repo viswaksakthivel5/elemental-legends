@@ -19,6 +19,12 @@ export class UIManager {
     this.victoryScreen = document.getElementById('victory-screen');
     this.defeatScreen = document.getElementById('defeat-screen');
 
+    // Clue & Interaction Elements
+    this.interactionPrompt = document.getElementById('interaction-prompt');
+    this.clueModal = document.getElementById('clue-modal');
+    this.clueTitleText = document.getElementById('clue-title-text');
+    this.clueContentText = document.getElementById('clue-content-text');
+
     // HUD Elements
     this.playerHpFill = document.getElementById('player-hp-fill');
     this.playerHpText = document.getElementById('player-hp-text');
@@ -51,13 +57,40 @@ export class UIManager {
   }
 
   _bindEvents() {
+    // Clue Modal Close Button
+    const btnCloseClue = document.getElementById('btn-close-clue');
+    if (btnCloseClue) {
+      btnCloseClue.onclick = () => this.hideClue();
+    }
+
     // Title Buttons
-    document.getElementById('btn-start-game').onclick = () => {
-      soundManager.resume();
-      this.titleScreen.style.display = 'none';
-      this.hudOverlay.style.display = 'flex';
-      this.engine.startNewGame();
-    };
+    const btnStart = document.getElementById('btn-start-game');
+    if (btnStart) {
+      const handleStart = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        try {
+          soundManager.resume();
+          if (this.titleScreen) this.titleScreen.style.display = 'none';
+          if (this.hudOverlay) this.hudOverlay.style.display = 'flex';
+          this.engine.startNewGame();
+        } catch (err) {
+          console.error('[Elemental Legends] Error starting game:', err);
+        }
+      };
+
+      btnStart.onclick = handleStart;
+      btnStart.addEventListener('click', handleStart);
+    }
+
+    // Allow Enter key to start game from Title screen
+    window.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && this.engine.gameState === 'TITLE' && this.titleScreen && this.titleScreen.style.display !== 'none') {
+        if (btnStart) btnStart.click();
+      }
+    });
 
     document.getElementById('btn-open-settings').onclick = () => {
       this.lastModalSource = 'title';
@@ -242,5 +275,31 @@ export class UIManager {
   setObjective(title, desc) {
     this.objTitle.innerText = title;
     this.objDesc.innerText = desc;
+  }
+
+  setInteractionPrompt(text) {
+    if (!this.interactionPrompt) return;
+    if (text) {
+      this.interactionPrompt.innerText = text;
+      this.interactionPrompt.style.display = 'block';
+    } else {
+      this.interactionPrompt.style.display = 'none';
+    }
+  }
+
+  showClue(title, content) {
+    if (!this.clueModal) return;
+    if (this.clueTitleText) this.clueTitleText.innerText = title;
+    if (this.clueContentText) this.clueContentText.innerText = content;
+    this.clueModal.style.display = 'flex';
+  }
+
+  hideClue() {
+    if (!this.clueModal) return;
+    this.clueModal.style.display = 'none';
+  }
+
+  isClueOpen() {
+    return this.clueModal && this.clueModal.style.display === 'flex';
   }
 }

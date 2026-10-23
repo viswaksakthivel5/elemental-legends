@@ -96,18 +96,15 @@ export class Player {
     }
 
     if (this.sword) {
-      if (this.sword.bladeMesh) {
+      if (this.sword.bladeMesh && this.sword.bladeMesh.material && this.sword.bladeMesh.material.emissive) {
         this.sword.bladeMesh.material.emissive.setHex(bladeColor);
       }
-      if (this.sword.bladeTip) {
-        this.sword.bladeTip.material.emissive.setHex(bladeColor);
-      }
-      if (this.sword.auraMesh) {
+      if (this.sword.auraMesh && this.sword.auraMesh.material) {
         this.sword.auraMesh.material.color.setHex(auraColor);
       }
-      if (this.sword.gemMesh) {
-        this.sword.gemMesh.material.color.setHex(runeColor);
-        this.sword.gemMesh.material.emissive.setHex(bladeColor);
+      if (this.sword.gemMesh && this.sword.gemMesh.material) {
+        if (this.sword.gemMesh.material.color) this.sword.gemMesh.material.color.setHex(runeColor);
+        if (this.sword.gemMesh.material.emissive) this.sword.gemMesh.material.emissive.setHex(bladeColor);
       }
     }
 
@@ -280,8 +277,13 @@ export class Player {
     this.targetFacingAngle = Math.atan2(moveDir.x, moveDir.z);
 
     // Procedural run cycle
+    const prevLegSwing = Math.sin(this.walkCycle);
     this.walkCycle += dt * 11.0;
     const legSwing = Math.sin(this.walkCycle);
+
+    if ((prevLegSwing <= 0 && legSwing > 0) || (prevLegSwing >= 0 && legSwing < 0)) {
+      soundManager.playFootstep();
+    }
 
     this.joints.hipL.rotation.x = legSwing * 0.65;
     this.joints.hipR.rotation.x = -legSwing * 0.65;

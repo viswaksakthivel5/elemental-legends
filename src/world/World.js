@@ -1,227 +1,334 @@
 /**
- * World.js
- * Builds the explorable dark-fantasy battlefield: gothic cathedral ruins,
- * central runic arena floor, lava chasms, atmospheric fog, dynamic lighting, and sky dome.
+ * World.js - Level 3 Dark Fantasy Overhaul
+ * Constructs the 4 connected zones:
+ * 1. The Forgotten Village (Medieval houses, wells, 3 braziers, Clue 1, thorn gate)
+ * 2. The Haunted Forest (Dead trees, eerie fog, Clue 2, corrupted canal & ice bridge)
+ * 3. The Ancient Elemental Shrine (Gothic pillars, obelisks, Clue 3, lightning conduit)
+ * 4. The Ruined Fortress (Iron portcullis, fortress walls, The Hollow Guardian boss sanctum)
  */
 
 import * as THREE from 'three';
 import { EnvironmentProps } from './EnvironmentProps.js';
 
 export class World {
-  constructor(scene) {
+  constructor(scene, puzzleManager) {
     this.scene = scene;
-    this.braziers = [];
-    this.flickerTimer = 0;
+    this.puzzleManager = puzzleManager;
+
+    this.brazierEntities = [];
+    this.lightningTimer = 0;
+    this.skyDome = null;
+    this.dirLight = null;
 
     this.init();
   }
 
   init() {
-    // 1. Atmospheric Fog
-    this.scene.fog = new THREE.FogExp2(0x0e1218, 0.022);
+    // 1. Atmospheric Mountain Mist (Matching Reference Photo - Soft Cold Fog with High Near-Field Visibility)
+    const fogColor = 0x6e7f91;
+    this.scene.background = new THREE.Color(fogColor);
+    this.scene.fog = new THREE.Fog(fogColor, 18, 95);
 
-    // 2. Lighting Setup
+    // 2. Cinematic Overcast Daylight Lighting (Prevents any pitch-black dark surroundings)
     this._setupLighting();
 
-    // 3. Terrain & Arena Ground
+    // 3. Terrain & Muddy Cobblestone Road
     this._createTerrain();
 
-    // 4. Central Runic Circle
-    this._createRunicCircle();
+    // 4. Build Zone 1: The Forgotten Village (Z: 28 to 5)
+    this._buildForgottenVillage();
 
-    // 5. Ruined Fortress Architecture & Props
-    this._createRuins();
+    // 5. Build Zone 2: The Haunted Forest & Canal (Z: 5 to -14)
+    this._buildHauntedForest();
 
-    // 6. Sky Dome
+    // 6. Build Zone 3: The Ancient Shrine & Conduit (Z: -14 to -25)
+    this._buildAncientShrine();
+
+    // 7. Build Zone 4: The Ruined Fortress (Z: -25 to -50)
+    this._buildRuinedFortress();
+
+    // 8. Stormy Mist Sky Dome
     this._createSkyDome();
   }
 
   _setupLighting() {
-    // Ambient Light: cool abyssal fill
-    const ambient = new THREE.AmbientLight(0x1a2230, 0.85);
+    // 1. Soft, high-visibility overcast ambient skylight
+    const ambient = new THREE.AmbientLight(0xabc0d4, 1.85);
     this.scene.add(ambient);
 
-    // Main Directional Light (Moonlight / Eclipse Sun)
-    const dirLight = new THREE.DirectionalLight(0xa5c4e8, 1.4);
-    dirLight.position.set(25, 45, 20);
-    dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 2048;
-    dirLight.shadow.mapSize.height = 2048;
-    dirLight.shadow.camera.near = 0.5;
-    dirLight.shadow.camera.far = 120;
+    // 2. Primary directional sunlight penetrating through mist
+    this.dirLight = new THREE.DirectionalLight(0xf2f7fc, 2.2);
+    this.dirLight.position.set(25, 45, 15);
+    this.dirLight.castShadow = true;
+    this.dirLight.shadow.mapSize.width = 2048;
+    this.dirLight.shadow.mapSize.height = 2048;
+    this.dirLight.shadow.camera.near = 0.5;
+    this.dirLight.shadow.camera.far = 140;
 
-    const d = 35;
-    dirLight.shadow.camera.left = -d;
-    dirLight.shadow.camera.right = d;
-    dirLight.shadow.camera.top = d;
-    dirLight.shadow.camera.bottom = -d;
-    dirLight.shadow.bias = -0.0008;
+    const d = 45;
+    this.dirLight.shadow.camera.left = -d;
+    this.dirLight.shadow.camera.right = d;
+    this.dirLight.shadow.camera.top = d;
+    this.dirLight.shadow.camera.bottom = -d;
+    this.dirLight.shadow.bias = -0.0006;
+    this.scene.add(this.dirLight);
 
-    this.scene.add(dirLight);
+    // 3. Secondary Rim / Back light for crisp character & tree silhouettes
+    const rimLight = new THREE.DirectionalLight(0x8ba2b8, 1.3);
+    rimLight.position.set(-25, 30, -25);
+    this.scene.add(rimLight);
 
-    // Volcanic Underlight
-    const lavaUnderLight = new THREE.DirectionalLight(0xff3300, 0.6);
-    lavaUnderLight.position.set(-30, -10, -30);
-    this.scene.add(lavaUnderLight);
+    // 4. Front fill light so character face, fur collar, and chest gambeson are crystal clear
+    const frontFill = new THREE.DirectionalLight(0xdde6f0, 0.85);
+    frontFill.position.set(0, 15, 35);
+    this.scene.add(frontFill);
   }
 
   _createTerrain() {
-    // Central Fortress Floor: Cobblestone / dark flagstone texture generated on canvas
+    // Muddy gravel and stone road texture
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = '#181b22';
+    ctx.fillStyle = '#3a434d';
     ctx.fillRect(0, 0, 512, 512);
 
-    // Stone tile grid lines
-    ctx.strokeStyle = '#0e1014';
-    ctx.lineWidth = 4;
-    const tileSize = 64;
-    for (let x = 0; x < 512; x += tileSize) {
-      for (let y = 0; y < 512; y += tileSize) {
-        // Tile variation
-        const shade = Math.floor(Math.random() * 25);
-        ctx.fillStyle = `rgb(${22 + shade}, ${26 + shade}, ${32 + shade})`;
-        ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
-        ctx.strokeRect(x, y, tileSize, tileSize);
-      }
+    // Gravel, stone, and earth speckling
+    for (let i = 0; i < 5000; i++) {
+      const x = Math.random() * 512;
+      const y = Math.random() * 512;
+      const c = Math.floor(Math.random() * 45);
+      ctx.fillStyle = `rgb(${48 + c}, ${56 + c}, ${64 + c})`;
+      ctx.fillRect(x, y, 2 + Math.random() * 3, 2 + Math.random() * 3);
+    }
+
+    // Puddle wet patches
+    for (let i = 0; i < 18; i++) {
+      const px = Math.random() * 480;
+      const py = Math.random() * 480;
+      const rad = 15 + Math.random() * 30;
+      ctx.beginPath();
+      ctx.arc(px, py, rad, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(28, 34, 40, 0.55)';
+      ctx.fill();
     }
 
     const groundTex = new THREE.CanvasTexture(canvas);
-    groundTex.wrapS = THREE.RepeatWrapping;
-    groundTex.wrapT = THREE.RepeatWrapping;
-    groundTex.repeat.set(12, 12);
+    groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping;
+    groundTex.repeat.set(16, 24);
 
-    const groundGeom = new THREE.PlaneGeometry(75, 75);
+    const groundGeom = new THREE.PlaneGeometry(80, 120);
     groundGeom.rotateX(-Math.PI / 2);
+    groundGeom.translate(0, 0, -10);
 
     const groundMat = new THREE.MeshStandardMaterial({
       map: groundTex,
-      roughness: 0.8,
-      metalness: 0.2
+      roughness: 0.72,
+      metalness: 0.12
     });
 
     const ground = new THREE.Mesh(groundGeom, groundMat);
     ground.receiveShadow = true;
     this.scene.add(ground);
-
-    // Outer Volcanic Lava Trenches
-    const lavaGeom = new THREE.PlaneGeometry(160, 160);
-    lavaGeom.rotateX(-Math.PI / 2);
-    lavaGeom.translate(0, -1.8, 0);
-
-    const lavaMat = new THREE.MeshBasicMaterial({
-      color: 0xff3300
-    });
-    const lava = new THREE.Mesh(lavaGeom, lavaMat);
-    this.scene.add(lava);
   }
 
-  _createRunicCircle() {
-    // Glowing runic circle decal in center of arena
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d');
+  // --- ZONE 1: THE FORGOTTEN VILLAGE ---
+  _buildForgottenVillage() {
+    // Medieval Houses lining the village road
+    const housePositions = [
+      { x: -11, z: 22, rot: 0.2 },
+      { x: 11, z: 22, rot: -0.2 },
+      { x: -12, z: 12, rot: 0.1 },
+      { x: 12, z: 12, rot: -0.15 }
+    ];
 
-    ctx.clearRect(0, 0, 512, 512);
-    ctx.strokeStyle = '#ff5500';
-    ctx.lineWidth = 6;
-    ctx.shadowBlur = 18;
-    ctx.shadowColor = '#ff3300';
+    housePositions.forEach(p => {
+      const house = EnvironmentProps.createMedievalHouse(6.5, 5.2, 7.5);
+      house.position.set(p.x, 0, p.z);
+      house.rotation.y = p.rot;
+      this.scene.add(house);
+    });
 
-    // Outer circles
-    ctx.beginPath();
-    ctx.arc(256, 256, 220, 0, Math.PI * 2);
-    ctx.arc(256, 256, 180, 0, Math.PI * 2);
-    ctx.stroke();
+    // Village Well at center-left
+    const wellGeom = new THREE.CylinderGeometry(1.1, 1.2, 0.9, 8);
+    wellGeom.translate(-4, 0.45, 18);
+    const well = new THREE.Mesh(wellGeom, new THREE.MeshStandardMaterial({ color: 0x333840, roughness: 0.9 }));
+    well.castShadow = true;
+    this.scene.add(well);
 
-    // Pentagram / Octagram lines
-    for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2;
-      const x1 = 256 + Math.cos(angle) * 180;
-      const y1 = 256 + Math.sin(angle) * 180;
-      const x2 = 256 + Math.cos(angle + Math.PI * 0.75) * 180;
-      const y2 = 256 + Math.sin(angle + Math.PI * 0.75) * 180;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
+    // Clue 1 Pedestal: Village Elder's Journal
+    const clue1 = EnvironmentProps.createCluePedestal(new THREE.Vector3(-6, 0, 14));
+    this.scene.add(clue1);
+
+    // Puzzle 1: 3 Ancient Stone Braziers
+    const brazierPositions = [
+      new THREE.Vector3(-4.5, 0, 7.5),
+      new THREE.Vector3(4.5, 0, 7.5),
+      new THREE.Vector3(0, 0, 5.5)
+    ];
+
+    brazierPositions.forEach((pos, idx) => {
+      const brazier = EnvironmentProps.createAncientBrazier(pos);
+      this.scene.add(brazier);
+      this.brazierEntities.push(brazier);
+      if (this.puzzleManager) {
+        this.puzzleManager.registerBrazier(brazier, brazier.fireLight, idx);
+      }
+    });
+
+    // Cursed Thorn Vines blocking Forest Gate
+    const vines = EnvironmentProps.createCursedVines(8.0, 4.5);
+    vines.position.set(0, 0, 4.5);
+    this.scene.add(vines);
+
+    // Stone Archway at Village Boundary
+    const gateArch = this._createStoneGateArch(8.0, 6.0);
+    gateArch.position.set(0, 0, 4.8);
+    this.scene.add(gateArch);
+
+    if (this.puzzleManager) {
+      this.puzzleManager.registerVillageGate(gateArch, vines);
     }
-
-    const runicTex = new THREE.CanvasTexture(canvas);
-    const runicGeom = new THREE.PlaneGeometry(18, 18);
-    runicGeom.rotateX(-Math.PI / 2);
-
-    const runicMat = new THREE.MeshBasicMaterial({
-      map: runicTex,
-      transparent: true,
-      opacity: 0.65,
-      blending: THREE.AdditiveBlending
-    });
-
-    this.runicMesh = new THREE.Mesh(runicGeom, runicMat);
-    this.runicMesh.position.y = 0.02;
-    this.scene.add(this.runicMesh);
   }
 
-  _createRuins() {
-    // 1. Grand Entrance Arch at North (Boss Gate)
-    const bossArch = EnvironmentProps.createArch(16.0, 11.0);
-    bossArch.position.set(0, 0, -32);
-    this.scene.add(bossArch);
+  // --- ZONE 2: THE HAUNTED FOREST & CORRUPTED CANAL ---
+  _buildHauntedForest() {
+    // Gnarled dead oak trees scattered through forest
+    const treePositions = [
+      [-9, 2], [9, 1], [-12, -2], [11, -3],
+      [-7, -7], [8, -8], [-14, -13], [13, -12],
+      [-5, 0], [6, -1]
+    ];
 
-    // 2. Colonnade of Gothic Pillars enclosing the arena
+    treePositions.forEach(([x, z]) => {
+      const tree = EnvironmentProps.createDeadTree(6.5 + Math.random() * 2.5);
+      tree.position.set(x, 0, z);
+      tree.rotation.y = Math.random() * Math.PI * 2;
+      this.scene.add(tree);
+    });
+
+    // Clue 2 Pedestal: Scholar's Frost Parchment
+    const clue2 = EnvironmentProps.createCluePedestal(new THREE.Vector3(8, 0, -4));
+    this.scene.add(clue2);
+
+    // Puzzle 2: Corrupted Canal and Crystalline Ice Bridge
+    const canal = EnvironmentProps.createCorruptedCanal(34.0, 8.0);
+    canal.position.set(0, 0, -9);
+    this.scene.add(canal);
+
+    if (this.puzzleManager) {
+      this.puzzleManager.registerCanal(canal.waterMesh, canal.iceBridge);
+    }
+  }
+
+  // --- ZONE 3: THE ANCIENT SHRINE & CONDUIT ---
+  _buildAncientShrine() {
+    // Ancient stone pillars flanking the shrine pathway
     const pillarPositions = [
-      [-18, -24], [18, -24],
-      [-22, -14], [22, -14],
-      [-24, -2],  [24, -2],
-      [-24, 10],  [24, 10],
-      [-20, 22],  [20, 22],
-      [-10, 28],  [10, 28]
+      [-7, -15], [7, -15],
+      [-8, -19], [8, -19],
+      [-6, -23], [6, -23]
     ];
 
     pillarPositions.forEach(([x, z], idx) => {
-      const isBroken = idx % 2 === 1;
-      const pillar = EnvironmentProps.createPillar(isBroken ? 7.0 : 8.5, 0.75, isBroken);
+      const pillarGeom = new THREE.CylinderGeometry(0.55, 0.65, 6.5, 8);
+      pillarGeom.translate(0, 3.25, 0);
+      const pillarMat = new THREE.MeshStandardMaterial({ color: 0x3a4049, roughness: 0.85 });
+      const pillar = new THREE.Mesh(pillarGeom, pillarMat);
       pillar.position.set(x, 0, z);
+      pillar.castShadow = true;
       this.scene.add(pillar);
     });
 
-    // 3. Burning Braziers along perimeter
-    const brazierPositions = [
-      new THREE.Vector3(-14, 0, -22),
-      new THREE.Vector3(14, 0, -22),
-      new THREE.Vector3(-16, 0, 4),
-      new THREE.Vector3(16, 0, 4),
-      new THREE.Vector3(-10, 0, 20),
-      new THREE.Vector3(10, 0, 20)
-    ];
+    // Clue 3 Pedestal: Warden's Runic Inscription
+    const clue3 = EnvironmentProps.createCluePedestal(new THREE.Vector3(-7, 0, -22));
+    this.scene.add(clue3);
 
-    brazierPositions.forEach(pos => {
-      const brazier = EnvironmentProps.createBrazier(pos);
-      this.braziers.push(brazier);
-      this.scene.add(brazier);
+    // Puzzle 3: Lightning Conduit Generator
+    const conduit = EnvironmentProps.createLightningConduit(new THREE.Vector3(6, 0, -22));
+    this.scene.add(conduit);
+
+    // Heavy Fortress Gatehouse with Portcullis
+    const fortressGateArch = this._createStoneGateArch(9.0, 7.5);
+    fortressGateArch.position.set(0, 0, -25.5);
+    this.scene.add(fortressGateArch);
+
+    const portcullis = EnvironmentProps.createPortcullis(6.2, 6.5);
+    portcullis.position.set(0, 0, -25.5);
+    this.scene.add(portcullis);
+
+    if (this.puzzleManager) {
+      this.puzzleManager.registerConduit(conduit, conduit.light, portcullis);
+    }
+  }
+
+  // --- ZONE 4: THE RUINED FORTRESS KEEP & BOSS SANCTUM ---
+  _buildRuinedFortress() {
+    // Fortress Arena perimeter walls (Z: -26 to -48)
+    const wallMat = new THREE.MeshStandardMaterial({
+      color: 0x22262d,
+      roughness: 0.9,
+      metalness: 0.2
     });
 
-    // 4. Arcane Crystals
-    const crystalPositions = [
-      { pos: new THREE.Vector3(-21, 0, -8), color: 0x00d9ff },
-      { pos: new THREE.Vector3(21, 0, -8), color: 0x9922ff },
-      { pos: new THREE.Vector3(-15, 0, 16), color: 0x3388ff },
-      { pos: new THREE.Vector3(15, 0, 16), color: 0xff4400 }
-    ];
+    // Left wall
+    const wallLGeom = new THREE.BoxGeometry(1.6, 9.0, 24.0);
+    wallLGeom.translate(-16, 4.5, -37);
+    const wallL = new THREE.Mesh(wallLGeom, wallMat);
+    wallL.castShadow = true;
+    this.scene.add(wallL);
 
-    crystalPositions.forEach(c => {
-      const cluster = EnvironmentProps.createCrystalCluster(c.pos, c.color);
-      this.scene.add(cluster);
+    // Right wall
+    const wallRGeom = new THREE.BoxGeometry(1.6, 9.0, 24.0);
+    wallRGeom.translate(16, 4.5, -37);
+    const wallR = new THREE.Mesh(wallRGeom, wallMat);
+    wallR.castShadow = true;
+    this.scene.add(wallR);
+
+    // Back Keep Wall
+    const wallBackGeom = new THREE.BoxGeometry(32.0, 12.0, 2.0);
+    wallBackGeom.translate(0, 6.0, -49);
+    const wallBack = new THREE.Mesh(wallBackGeom, wallMat);
+    wallBack.castShadow = true;
+    this.scene.add(wallBack);
+
+    // Boss Dais Runic Floor
+    const daisGeom = new THREE.CylinderGeometry(8.5, 9.0, 0.4, 16);
+    daisGeom.translate(0, 0.2, -37);
+    const daisMat = new THREE.MeshStandardMaterial({
+      color: 0x181a20,
+      roughness: 0.85
     });
+    const dais = new THREE.Mesh(daisGeom, daisMat);
+    dais.receiveShadow = true;
+    this.scene.add(dais);
+  }
+
+  _createStoneGateArch(width = 8.0, height = 6.0) {
+    const group = new THREE.Group();
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x2b313a, roughness: 0.9 });
+
+    // Left Post
+    const postGeom = new THREE.BoxGeometry(1.2, height, 1.2);
+    postGeom.translate(-width / 2, height / 2, 0);
+    group.add(new THREE.Mesh(postGeom, stoneMat));
+
+    // Right Post
+    const postR = new THREE.Mesh(postGeom, stoneMat);
+    postR.position.x = width;
+    group.add(postR);
+
+    // Lintel Arch
+    const lintelGeom = new THREE.BoxGeometry(width + 2.0, 1.2, 1.4);
+    lintelGeom.translate(0, height + 0.6, 0);
+    group.add(new THREE.Mesh(lintelGeom, stoneMat));
+
+    return group;
   }
 
   _createSkyDome() {
-    const skyGeom = new THREE.SphereGeometry(140, 32, 24);
+    const skyGeom = new THREE.SphereGeometry(150, 32, 24);
     skyGeom.scale(-1, 1, 1);
 
     const canvas = document.createElement('canvas');
@@ -229,11 +336,12 @@ export class World {
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
+    // Misty mountain overcast gradient (Matching Reference Photo)
     const grad = ctx.createLinearGradient(0, 0, 0, 512);
-    grad.addColorStop(0, '#04060a');
-    grad.addColorStop(0.5, '#0e121a');
-    grad.addColorStop(0.85, '#1e1422');
-    grad.addColorStop(1, '#33120d');
+    grad.addColorStop(0, '#2e3a47');   // Dark slate overcast zenith
+    grad.addColorStop(0.35, '#4a5b6c'); // Cool atmospheric cloud layer
+    grad.addColorStop(0.7, '#6b7d8f');  // Misty mountain haze
+    grad.addColorStop(1, '#8e9fac');   // Pale cold horizon mist
 
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 512, 512);
@@ -244,22 +352,21 @@ export class World {
       fog: false
     });
 
-    const sky = new THREE.Mesh(skyGeom, skyMat);
-    this.scene.add(sky);
+    this.skyDome = new THREE.Mesh(skyGeom, skyMat);
+    this.scene.add(this.skyDome);
   }
 
   update(dt, playerElement = 'FIRE') {
-    // Dynamic brazier light flicker
-    this.flickerTimer += dt * 14.0;
-    this.braziers.forEach((b, i) => {
-      if (b.flickerLight) {
-        b.flickerLight.intensity = 16.0 + Math.sin(this.flickerTimer + i * 1.5) * 4.0;
+    // Distant storm lightning flashes on horizon
+    this.lightningTimer += dt;
+    if (this.lightningTimer > 9.0 + Math.random() * 6.0) {
+      this.lightningTimer = 0;
+      if (this.dirLight) {
+        this.dirLight.intensity = 3.5;
+        setTimeout(() => {
+          if (this.dirLight) this.dirLight.intensity = 1.25;
+        }, 120);
       }
-    });
-
-    // Slow rotation of central runic circle
-    if (this.runicMesh) {
-      this.runicMesh.rotation.y += dt * 0.08;
     }
   }
 }

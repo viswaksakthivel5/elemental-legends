@@ -1,9 +1,10 @@
 /**
- * WaveManager.js
- * Controls game progression across 3 escalating waves:
- * Wave 1: Corrupted Soldiers
- * Wave 2: Elite Knights & Void Cultists
- * Wave 3: The Fallen King Boss Encounter
+ * WaveManager.js - Level 3 Dark-Fantasy Adventure Progression
+ * Manages connected zone transitions, enemy spawns, puzzle gates, and The Hollow Guardian boss:
+ * Zone 1: The Forgotten Village (2 Cursed Wanderers + 3 Braziers Fire Puzzle)
+ * Zone 2: The Haunted Forest (2 Cursed Wanderers + 2 Void Wraiths + Canal Ice Puzzle)
+ * Zone 3: The Ancient Shrine (2 Elite Knights + Lightning Conduit Storm Puzzle)
+ * Zone 4: The Ruined Fortress (The Hollow Guardian Epic Boss Encounter)
  */
 
 import * as THREE from 'three';
@@ -12,21 +13,25 @@ import { Boss } from '../entities/Boss.js';
 import { soundManager } from '../core/SoundManager.js';
 
 export class WaveManager {
-  constructor(scene, vfxManager) {
+  constructor(scene, vfxManager, puzzleManager) {
     this.scene = scene;
     this.vfx = vfxManager;
+    this.puzzleManager = puzzleManager;
 
-    this.currentWave = 0;
+    this.currentZone = 1; // 1 = Village, 2 = Forest, 3 = Shrine, 4 = Boss
     this.enemies = [];
     this.boss = null;
 
     this.totalKills = 0;
-    this.waveState = 'NOT_STARTED'; // 'NOT_STARTED', 'IN_PROGRESS', 'WAVE_CLEARED', 'BOSS_ACTIVE', 'ALL_CLEARED'
-    this.transitionTimer = 0;
+    this.zoneState = 'VILLAGE'; // 'VILLAGE', 'FOREST', 'SHRINE', 'BOSS', 'CLEANSED'
+
+    // Flags for zone triggers
+    this.hasSpawnedForestEnemies = false;
+    this.hasSpawnedShrineEnemies = false;
+    this.hasSpawnedBoss = false;
 
     // UI callbacks
-    this.onWaveStart = null; // (waveNumber, waveTitle, objective)
-    this.onWaveClear = null; // (waveNumber)
+    this.onZoneObjective = null; // (zoneTitle, objectiveText)
     this.onBossSpawn = null; // (boss)
     this.onVictory = null;
 
@@ -34,104 +39,150 @@ export class WaveManager {
     this.onEnemyProjectile = null;
   }
 
-  startFirstWave() {
-    this.currentWave = 0;
-    this._nextWave();
+  startAdventure() {
+    this.currentZone = 1;
+    this.zoneState = 'VILLAGE';
+    this._spawnVillageEnemies();
+
+    if (this.onZoneObjective) {
+      this.onZoneObjective(
+        'CHAPTER I: THE FORGOTTEN VILLAGE',
+        'Inspect the Elder’s Journal and ignite 3 Braziers with Fire to open the Forest Gate.'
+      );
+    }
   }
 
-  _nextWave() {
-    this.currentWave++;
+  _spawnVillageEnemies() {
+    const wandererSpawns = [
+      new THREE.Vector3(-5, 0, 16),
+      new THREE.Vector3(5, 0, 11)
+    ];
 
-    // Clear any dead enemy meshes remaining
-    this.enemies.forEach(e => {
-      if (e.mesh && e.mesh.parent) this.scene.remove(e.mesh);
+    wandererSpawns.forEach(pos => {
+      const enemy = new Enemy(this.scene, 'SOLDIER', pos);
+      this.enemies.push(enemy);
+      this.vfx.spawnShockwave(pos, 2.4, 0x442211);
     });
-    this.enemies = [];
+  }
 
-    if (this.currentWave === 1) {
-      // Wave 1: 4 Corrupted Soldiers
-      this.waveState = 'IN_PROGRESS';
-      if (this.onWaveStart) {
-        this.onWaveStart(1, 'WAVE 1: CORRUPTED VANGUARD', 'Defeat the Fallen Soldiers (0/4)');
-      }
+  _spawnForestEnemies() {
+    if (this.hasSpawnedForestEnemies) return;
+    this.hasSpawnedForestEnemies = true;
+    this.currentZone = 2;
+    this.zoneState = 'FOREST';
 
-      const spawnPoints = [
-        new THREE.Vector3(-10, 0, -12),
-        new THREE.Vector3(10, 0, -12),
-        new THREE.Vector3(-6, 0, -18),
-        new THREE.Vector3(6, 0, -18)
-      ];
+    if (this.onZoneObjective) {
+      this.onZoneObjective(
+        'CHAPTER II: THE HAUNTED FOREST',
+        'Find the Scholar’s Parchment and cast Ice magic to freeze the Corrupted Canal.'
+      );
+    }
 
-      spawnPoints.forEach(pos => {
-        const enemy = new Enemy(this.scene, 'SOLDIER', pos);
-        this.enemies.push(enemy);
-        this.vfx.spawnShockwave(pos, 2.5, 0x661111);
-      });
+    // 2 Wanderers + 2 Void Wraiths in Forest
+    const forestSpawns = [
+      { type: 'SOLDIER', pos: new THREE.Vector3(-6, 0, 1) },
+      { type: 'SOLDIER', pos: new THREE.Vector3(6, 0, -2) },
+      { type: 'CULTIST', pos: new THREE.Vector3(-10, 0, -6) },
+      { type: 'CULTIST', pos: new THREE.Vector3(10, 0, -7) }
+    ];
 
-    } else if (this.currentWave === 2) {
-      // Wave 2: 2 Elite Knights + 2 Void Cultists
-      this.waveState = 'IN_PROGRESS';
-      if (this.onWaveStart) {
-        this.onWaveStart(2, 'WAVE 2: ABYSSAL ELITES', 'Eliminate the Elite Knights & Void Cultists (0/4)');
-      }
-
-      const knightSpawns = [
-        new THREE.Vector3(-8, 0, -14),
-        new THREE.Vector3(8, 0, -14)
-      ];
-      knightSpawns.forEach(pos => {
-        const knight = new Enemy(this.scene, 'KNIGHT', pos);
-        this.enemies.push(knight);
-        this.vfx.spawnShockwave(pos, 3.2, 0x441111);
-      });
-
-      const cultistSpawns = [
-        new THREE.Vector3(-14, 0, -22),
-        new THREE.Vector3(14, 0, -22)
-      ];
-      cultistSpawns.forEach(pos => {
-        const cultist = new Enemy(this.scene, 'CULTIST', pos);
-        cultist.onSpawnProjectile = (orig, targ, type) => {
+    forestSpawns.forEach(s => {
+      const enemy = new Enemy(this.scene, s.type, s.pos);
+      if (s.type === 'CULTIST') {
+        enemy.onSpawnProjectile = (orig, targ, type) => {
           if (this.onEnemyProjectile) this.onEnemyProjectile(orig, targ, type);
         };
-        this.enemies.push(cultist);
-        this.vfx.spawnShockwave(pos, 2.8, 0x9922ff);
-      });
-
-    } else if (this.currentWave === 3) {
-      // Wave 3: The Fallen King Boss Battle!
-      this.waveState = 'BOSS_ACTIVE';
-      this.boss = new Boss(this.scene, new THREE.Vector3(0, 0, -22));
-
-      this.boss.onSpawnTelegraph = (pos, radius, dur) => {
-        this.vfx.spawnTelegraph(pos, radius, dur);
-      };
-      this.boss.onSpawnShockwave = (pos, radius) => {
-        this.vfx.spawnShockwave(pos, radius, 0x7700ff);
-      };
-      this.boss.onSpawnProjectile = (orig, targ, type) => {
-        if (this.onEnemyProjectile) this.onEnemyProjectile(orig, targ, type);
-      };
-      this.boss.onDefeat = () => {
-        this.waveState = 'ALL_CLEARED';
-        soundManager.playVictory();
-        if (this.onVictory) this.onVictory();
-      };
-
-      if (this.onWaveStart) {
-        this.onWaveStart(3, 'FINAL ENCOUNTER: THE FALLEN KING', 'Slay the Corrupted Sovereign of the Ruined Realm');
       }
-      if (this.onBossSpawn) {
-        this.onBossSpawn(this.boss);
-      }
+      this.enemies.push(enemy);
+      this.vfx.spawnShockwave(s.pos, 2.8, s.type === 'CULTIST' ? 0x7700ff : 0x442211);
+    });
+  }
+
+  _spawnShrineEnemies() {
+    if (this.hasSpawnedShrineEnemies) return;
+    this.hasSpawnedShrineEnemies = true;
+    this.currentZone = 3;
+    this.zoneState = 'SHRINE';
+
+    if (this.onZoneObjective) {
+      this.onZoneObjective(
+        'CHAPTER III: THE ANCIENT SHRINE',
+        'Read the Warden’s Inscription and strike the Lightning Conduit with Storm magic.'
+      );
+    }
+
+    // 2 Elite Knights guarding the path to the Fortress Portcullis
+    const shrineSpawns = [
+      new THREE.Vector3(-6, 0, -17),
+      new THREE.Vector3(6, 0, -19)
+    ];
+
+    shrineSpawns.forEach(pos => {
+      const knight = new Enemy(this.scene, 'KNIGHT', pos);
+      this.enemies.push(knight);
+      this.vfx.spawnShockwave(pos, 3.2, 0x441111);
+    });
+  }
+
+  _spawnBoss() {
+    if (this.hasSpawnedBoss) return;
+    this.hasSpawnedBoss = true;
+    this.currentZone = 4;
+    this.zoneState = 'BOSS';
+
+    this.boss = new Boss(this.scene, new THREE.Vector3(0, 0, -37));
+
+    this.boss.onSpawnTelegraph = (pos, radius, dur) => {
+      this.vfx.spawnTelegraph(pos, radius, dur);
+    };
+    this.boss.onSpawnShockwave = (pos, radius) => {
+      this.vfx.spawnShockwave(pos, radius, 0x8800ff);
+    };
+    this.boss.onSpawnProjectile = (orig, targ, type) => {
+      if (this.onEnemyProjectile) this.onEnemyProjectile(orig, targ, type);
+    };
+    this.boss.onDefeat = () => {
+      this.zoneState = 'CLEANSED';
+      soundManager.playVictory();
+      if (this.onVictory) this.onVictory();
+    };
+
+    if (this.onZoneObjective) {
+      this.onZoneObjective(
+        'FINAL CONFRONTATION: THE HOLLOW GUARDIAN',
+        'Vanquish the corrupted guardian to cleanse the Hollow Realm!'
+      );
+    }
+    if (this.onBossSpawn) {
+      this.onBossSpawn(this.boss);
     }
   }
 
   update(dt, player, onDamagePlayer, cameraManager) {
-    // 1. Update Normal Enemies
+    const playerPos = player.getPosition();
+
+    // 1. Zone Trigger Checks based on player position & puzzle states
+    if (this.puzzleManager) {
+      // Enter Forest when village gate is unlocked and player walks past Z = 4.5
+      if (this.puzzleManager.villageGateUnlocked && playerPos.z < 4.0 && !this.hasSpawnedForestEnemies) {
+        this._spawnForestEnemies();
+      }
+
+      // Enter Shrine when canal is frozen and player walks past Z = -13
+      if (this.puzzleManager.canalFrozen && playerPos.z < -13.0 && !this.hasSpawnedShrineEnemies) {
+        this._spawnShrineEnemies();
+      }
+
+      // Enter Fortress Sanctum when portcullis is raised and player walks past Z = -26
+      if (this.puzzleManager.portcullisRaised && playerPos.z < -26.0 && !this.hasSpawnedBoss) {
+        this._spawnBoss();
+      }
+    }
+
+    // 2. Update Active Enemies
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const enemy = this.enemies[i];
-      enemy.update(dt, player.getPosition(), onDamagePlayer);
+      enemy.update(dt, playerPos, onDamagePlayer);
 
       if (!enemy.isAlive && enemy.stateTime >= 0.9) {
         this.totalKills++;
@@ -139,24 +190,9 @@ export class WaveManager {
       }
     }
 
-    // 2. Update Boss
+    // 3. Update Boss
     if (this.boss && this.boss.isAlive) {
-      this.boss.update(dt, player.getPosition(), onDamagePlayer, cameraManager);
-    }
-
-    // 3. Check wave completion
-    if (this.waveState === 'IN_PROGRESS' && this.enemies.length === 0) {
-      this.waveState = 'WAVE_CLEARED';
-      this.transitionTimer = 3.5;
-      soundManager.playVictory();
-      if (this.onWaveClear) this.onWaveClear(this.currentWave);
-    }
-
-    if (this.waveState === 'WAVE_CLEARED') {
-      this.transitionTimer -= dt;
-      if (this.transitionTimer <= 0) {
-        this._nextWave();
-      }
+      this.boss.update(dt, playerPos, onDamagePlayer, cameraManager);
     }
   }
 
@@ -166,5 +202,13 @@ export class WaveManager {
 
   getBoss() {
     return this.boss;
+  }
+
+  get currentWave() {
+    return this.currentZone;
+  }
+
+  startFirstWave() {
+    this.startAdventure();
   }
 }
