@@ -963,6 +963,106 @@ export class CharacterModelBuilder {
     };
   }
 
+  // --- BUILD CORRUPTED ELITE KNIGHT (ENEMY TYPE C) ---
+  static buildEliteKnight() {
+    const root = new THREE.Group();
+    root.name = 'CorruptedEliteKnight';
+    root.scale.set(1.3, 1.3, 1.3);
+
+    const plateMat = new THREE.MeshStandardMaterial({
+      color: 0x303642,
+      roughness: 0.35,
+      metalness: 0.9
+    });
+
+    const rustMat = new THREE.MeshStandardMaterial({
+      color: 0x4a3222,
+      roughness: 0.75,
+      metalness: 0.4
+    });
+
+    const redVisorMat = new THREE.MeshBasicMaterial({ color: 0xff2222 });
+
+    const hips = new THREE.Group();
+    hips.position.y = 0.95;
+    root.add(hips);
+
+    const waist = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.26, 0.2, 8), plateMat);
+    hips.add(waist);
+
+    const spine = new THREE.Group();
+    spine.position.y = 0.15;
+    hips.add(spine);
+
+    const chest = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.45, 0.3), plateMat);
+    chest.position.y = 0.25;
+    chest.castShadow = true;
+    spine.add(chest);
+
+    // Great helm
+    const head = new THREE.Group();
+    head.position.y = 0.55;
+    spine.add(head);
+
+    const helm = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.28, 8), plateMat);
+    helm.position.y = 0.12;
+    head.add(helm);
+
+    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.03, 0.05), redVisorMat);
+    visor.position.set(0, 0.12, 0.15);
+    head.add(visor);
+
+    // Pauldrons
+    const shoulderL = new THREE.Group();
+    shoulderL.position.set(0.35, 0.38, 0);
+    spine.add(shoulderL);
+    const pauldronL = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.18, 0.24), plateMat);
+    shoulderL.add(pauldronL);
+
+    const shoulderR = new THREE.Group();
+    shoulderR.position.set(-0.35, 0.38, 0);
+    spine.add(shoulderR);
+    const pauldronR = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.18, 0.24), plateMat);
+    shoulderR.add(pauldronR);
+
+    // Heavy Warhammer in right arm
+    const hammer = new THREE.Group();
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.1, 8), rustMat);
+    hammer.add(shaft);
+    const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.32), plateMat);
+    headMesh.position.y = 0.45;
+    hammer.add(headMesh);
+    hammer.position.set(0, -0.4, 0.1);
+    hammer.rotation.x = Math.PI / 2;
+    shoulderR.add(hammer);
+
+    // Tower shield in left arm
+    const shield = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.36), plateMat);
+    shield.position.set(0.12, -0.25, 0.15);
+    shoulderL.add(shield);
+
+    // Legs
+    const hipL = new THREE.Group();
+    hipL.position.set(0.14, 0, 0);
+    hips.add(hipL);
+    const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.85, 6), plateMat);
+    legL.position.y = -0.42;
+    hipL.add(legL);
+
+    const hipR = new THREE.Group();
+    hipR.position.set(-0.14, 0, 0);
+    hips.add(hipR);
+    const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.85, 6), plateMat);
+    legR.position.y = -0.42;
+    hipR.add(legR);
+
+    return {
+      root,
+      joints: { hips, spine, head, shoulderL, shoulderR, hipL, hipR },
+      weapon: hammer
+    };
+  }
+
   // --- BUILD THE HOLLOW GUARDIAN (FINAL BOSS) ---
   static buildBoss() {
     const root = new THREE.Group();

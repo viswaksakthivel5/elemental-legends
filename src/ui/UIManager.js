@@ -64,12 +64,27 @@ export class UIManager {
     }
 
     // Title Buttons
-    document.getElementById('btn-start-game').onclick = () => {
-      soundManager.resume();
-      this.titleScreen.style.display = 'none';
-      this.hudOverlay.style.display = 'flex';
-      this.engine.startNewGame();
-    };
+    const btnStart = document.getElementById('btn-start-game');
+    if (btnStart) {
+      btnStart.onclick = (e) => {
+        if (e) e.stopPropagation();
+        try {
+          soundManager.resume();
+          this.titleScreen.style.display = 'none';
+          this.hudOverlay.style.display = 'flex';
+          this.engine.startNewGame();
+        } catch (err) {
+          console.error('[Elemental Legends] Error starting game:', err);
+        }
+      };
+    }
+
+    // Allow Enter key to start game from Title screen
+    window.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && this.engine.gameState === 'TITLE' && this.titleScreen.style.display !== 'none') {
+        if (btnStart) btnStart.click();
+      }
+    });
 
     document.getElementById('btn-open-settings').onclick = () => {
       this.lastModalSource = 'title';
