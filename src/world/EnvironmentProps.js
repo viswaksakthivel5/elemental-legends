@@ -373,4 +373,291 @@ export class EnvironmentProps {
 
     return group;
   }
+
+  // --- EXIT GATEWAY / MIGRATION PORTAL ---
+  static createExitGateway(position = new THREE.Vector3(), targetLevelNum = 2) {
+    this.initMaterials();
+    const group = new THREE.Group();
+    group.position.copy(position);
+
+    // Stone Archway Pillars
+    const pillarGeom = new THREE.BoxGeometry(1.0, 5.5, 1.0);
+    const pillarL = new THREE.Mesh(pillarGeom, this.stoneMat);
+    pillarL.position.set(-2.5, 2.75, 0);
+    pillarL.castShadow = true;
+    group.add(pillarL);
+
+    const pillarR = new THREE.Mesh(pillarGeom, this.stoneMat);
+    pillarR.position.set(2.5, 2.75, 0);
+    pillarR.castShadow = true;
+    group.add(pillarR);
+
+    // Lintel Header
+    const lintelGeom = new THREE.BoxGeometry(6.6, 1.0, 1.2);
+    const lintel = new THREE.Mesh(lintelGeom, this.stoneMat);
+    lintel.position.set(0, 5.5, 0);
+    group.add(lintel);
+
+    // Shimmering Golden/Cyan Vortex Veil
+    const veilGeom = new THREE.PlaneGeometry(4.2, 5.0);
+    const veilMat = new THREE.MeshBasicMaterial({
+      color: 0x00e1ff,
+      transparent: true,
+      opacity: 0.65,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending
+    });
+    const veil = new THREE.Mesh(veilGeom, veilMat);
+    veil.position.set(0, 2.5, 0);
+    group.add(veil);
+
+    // Portal Light
+    const portalLight = new THREE.PointLight(0x00ffff, 3.5, 12);
+    portalLight.position.set(0, 2.8, 0);
+    group.add(portalLight);
+
+    group.veil = veil;
+    group.portalLight = portalLight;
+    group.targetLevel = targetLevelNum;
+    return group;
+  }
+
+  // --- HIDDEN RELIC CHEST (ECHO VISION DISCOVERY) ---
+  static createRelicChest(position = new THREE.Vector3(), relicName = 'Ancient Relic') {
+    this.initMaterials();
+    const group = new THREE.Group();
+    group.position.copy(position);
+
+    const chestMat = new THREE.MeshStandardMaterial({
+      color: 0x221811,
+      roughness: 0.6,
+      metalness: 0.4
+    });
+
+    const goldTrimMat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37,
+      roughness: 0.3,
+      metalness: 0.9,
+      emissive: 0x886611,
+      emissiveIntensity: 0.5
+    });
+
+    // Base body
+    const baseGeom = new THREE.BoxGeometry(0.9, 0.5, 0.6);
+    baseGeom.translate(0, 0.25, 0);
+    const base = new THREE.Mesh(baseGeom, chestMat);
+    group.add(base);
+
+    // Curved Lid
+    const lidGeom = new THREE.CylinderGeometry(0.3, 0.3, 0.9, 12, 1, false, 0, Math.PI);
+    lidGeom.rotateZ(Math.PI / 2);
+    lidGeom.translate(0, 0.5, 0);
+    const lid = new THREE.Mesh(lidGeom, goldTrimMat);
+    group.add(lid);
+
+    // Spectral Echo Rune Beacon (Pulsing, visible in Echo Vision)
+    const echoRuneMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.0, // Hidden until Echo Vision activates
+      blending: THREE.AdditiveBlending
+    });
+    echoRuneMat.userData = { isEchoMaterial: true };
+
+    const beaconGeom = new THREE.OctahedronGeometry(0.25);
+    const beacon = new THREE.Mesh(beaconGeom, echoRuneMat);
+    beacon.position.set(0, 1.2, 0);
+    group.add(beacon);
+
+    group.beacon = beacon;
+    group.relicName = relicName;
+    group.isOpened = false;
+    return group;
+  }
+
+  // --- ANCIENT RUNIC ECHO PILLAR ---
+  static createEchoRunePillar(position = new THREE.Vector3()) {
+    this.initMaterials();
+    const group = new THREE.Group();
+    group.position.copy(position);
+
+    const pillarGeom = new THREE.CylinderGeometry(0.55, 0.65, 5.5, 8);
+    pillarGeom.translate(0, 2.75, 0);
+    const pillar = new THREE.Mesh(pillarGeom, this.stoneMat);
+    pillar.castShadow = true;
+    group.add(pillar);
+
+    // Glowing Spectral Inscription Ribbon
+    const runeMat = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
+      transparent: true,
+      opacity: 0.0,
+      blending: THREE.AdditiveBlending
+    });
+    runeMat.userData = { isEchoMaterial: true };
+
+    const ringGeom = new THREE.CylinderGeometry(0.58, 0.68, 1.8, 8, 1, true);
+    ringGeom.translate(0, 2.8, 0);
+    const ring = new THREE.Mesh(ringGeom, runeMat);
+    group.add(ring);
+
+    group.runeMesh = ring;
+    return group;
+  }
+
+  // --- SUBMERGED WATER SURFACE (LEVEL 3 SUNKEN SHRINE) ---
+  static createWaterSurface(width = 60, depth = 60) {
+    const geom = new THREE.PlaneGeometry(width, depth, 16, 16);
+    geom.rotateX(-Math.PI / 2);
+
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0x081c2c,
+      roughness: 0.1,
+      metalness: 0.85,
+      transparent: true,
+      opacity: 0.72
+    });
+
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.position.y = 0.05; // Resting just above stone floor
+    return mesh;
+  }
+
+  // --- GOTHIC FORTRESS BATTLEMENT TOWER (LEVEL 4) ---
+  static createFortressTower(height = 12, radius = 2.4) {
+    this.initMaterials();
+    const group = new THREE.Group();
+
+    // Tower Body
+    const bodyGeom = new THREE.CylinderGeometry(radius * 0.9, radius, height, 10);
+    bodyGeom.translate(0, height / 2, 0);
+    const body = new THREE.Mesh(bodyGeom, this.stoneMat);
+    body.castShadow = true;
+    group.add(body);
+
+    // Parapet Platform
+    const platformGeom = new THREE.CylinderGeometry(radius * 1.15, radius * 0.95, 1.2, 10);
+    platformGeom.translate(0, height + 0.6, 0);
+    const platform = new THREE.Mesh(platformGeom, this.stoneMat);
+    group.add(platform);
+
+    // Crenellations
+    for (let i = 0; i < 5; i++) {
+      const angle = (i / 5) * Math.PI * 2;
+      const merlonGeom = new THREE.BoxGeometry(0.7, 0.9, 0.35);
+      const merlon = new THREE.Mesh(merlonGeom, this.stoneMat);
+      merlon.position.set(
+        Math.cos(angle) * radius * 1.05,
+        height + 1.45,
+        Math.sin(angle) * radius * 1.05
+      );
+      merlon.rotation.y = -angle;
+      group.add(merlon);
+    }
+
+    return group;
+  }
+
+  // --- ABYSSAL OBSIDIAN CRYSTAL (LEVEL 5 HEART OF THE CURSE) ---
+  static createAbyssalCrystal(scale = 1.0) {
+    const group = new THREE.Group();
+    group.scale.set(scale, scale, scale);
+
+    const crystalMat = new THREE.MeshStandardMaterial({
+      color: 0x180a24,
+      roughness: 0.2,
+      metalness: 0.9,
+      emissive: 0x7700cc,
+      emissiveIntensity: 1.4
+    });
+
+    const geom = new THREE.ConeGeometry(0.6, 3.2, 5);
+    const crystal = new THREE.Mesh(geom, crystalMat);
+    crystal.position.y = 1.6;
+    crystal.castShadow = true;
+    group.add(crystal);
+
+    const light = new THREE.PointLight(0x9922ff, 1.8, 8.0);
+    light.position.y = 1.8;
+    group.add(light);
+
+    return group;
+  }
+
+  // --- MEDIEVAL VILLAGE WELL ---
+  static createMedievalWell(position = new THREE.Vector3()) {
+    this.initMaterials();
+    const group = new THREE.Group();
+    group.position.copy(position);
+
+    // Stone rim
+    const rimGeom = new THREE.CylinderGeometry(1.2, 1.3, 0.9, 12, 1, true);
+    rimGeom.translate(0, 0.45, 0);
+    const rim = new THREE.Mesh(rimGeom, this.stoneMat);
+    rim.castShadow = true;
+    group.add(rim);
+
+    // Well inner dark water
+    const waterGeom = new THREE.CircleGeometry(1.15, 12);
+    waterGeom.rotateX(-Math.PI / 2);
+    const waterMat = new THREE.MeshStandardMaterial({ color: 0x071118, roughness: 0.1, metalness: 0.8 });
+    const water = new THREE.Mesh(waterGeom, waterMat);
+    water.position.y = 0.2;
+    group.add(water);
+
+    // Support wooden posts
+    const postGeom = new THREE.BoxGeometry(0.2, 2.4, 0.2);
+    const postL = new THREE.Mesh(postGeom, this.woodMat);
+    postL.position.set(-1.1, 1.2, 0);
+    postL.castShadow = true;
+    const postR = new THREE.Mesh(postGeom, this.woodMat);
+    postR.position.set(1.1, 1.2, 0);
+    postR.castShadow = true;
+    group.add(postL, postR);
+
+    // Wooden cross beam
+    const beamGeom = new THREE.BoxGeometry(2.4, 0.2, 0.2);
+    const beam = new THREE.Mesh(beamGeom, this.woodMat);
+    beam.position.set(0, 2.3, 0);
+    group.add(beam);
+
+    // Small pitched roof
+    const roofGeom = new THREE.ConeGeometry(1.6, 0.9, 4);
+    roofGeom.rotateY(Math.PI / 4);
+    roofGeom.translate(0, 2.85, 0);
+    const roof = new THREE.Mesh(roofGeom, this.roofMat);
+    roof.castShadow = true;
+    group.add(roof);
+
+    return group;
+  }
+
+  // --- STONE GATE ARCH ---
+  static createStoneGateArch(width = 7.5, height = 6.0) {
+    this.initMaterials();
+    const group = new THREE.Group();
+
+    const pillarRadius = 0.6;
+    const pillarGeom = new THREE.CylinderGeometry(pillarRadius, pillarRadius * 1.1, height, 8);
+    pillarGeom.translate(0, height / 2, 0);
+
+    const pillarL = new THREE.Mesh(pillarGeom, this.stoneMat);
+    pillarL.position.x = -width / 2;
+    pillarL.castShadow = true;
+    pillarL.receiveShadow = true;
+
+    const pillarR = new THREE.Mesh(pillarGeom, this.stoneMat);
+    pillarR.position.x = width / 2;
+    pillarR.castShadow = true;
+    pillarR.receiveShadow = true;
+
+    // Header / arch lintel
+    const lintelGeom = new THREE.BoxGeometry(width + 1.2, 0.8, 1.4);
+    lintelGeom.translate(0, height + 0.4, 0);
+    const lintel = new THREE.Mesh(lintelGeom, this.stoneMat);
+    lintel.castShadow = true;
+
+    group.add(pillarL, pillarR, lintel);
+    return group;
+  }
 }

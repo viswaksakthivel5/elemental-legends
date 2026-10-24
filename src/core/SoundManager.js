@@ -513,6 +513,82 @@ export class SoundManager {
     });
   }
 
+  playEchoVisionActive() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    [329.63, 440, 554.37, 659.25, 880, 1108.73].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t + idx * 0.04);
+      gain.gain.setValueAtTime(0.22, t + idx * 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.04 + 0.55);
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(t + idx * 0.04);
+      osc.stop(t + idx * 0.04 + 0.6);
+    });
+  }
+
+  playEchoVisionDeactive() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    [659.25, 554.37, 440, 329.63].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t + idx * 0.05);
+      gain.gain.setValueAtTime(0.18, t + idx * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.05 + 0.35);
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(t + idx * 0.05);
+      osc.stop(t + idx * 0.05 + 0.4);
+    });
+  }
+
+  playLevelComplete() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const chords = [
+      [220, 329.63, 440],
+      [261.63, 392, 523.25],
+      [293.66, 440, 587.33],
+      [329.63, 493.88, 659.25]
+    ];
+    chords.forEach((chord, step) => {
+      chord.forEach(freq => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, t + step * 0.22);
+        gain.gain.setValueAtTime(0.25, t + step * 0.22);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + step * 0.22 + 1.2);
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(t + step * 0.22);
+        osc.stop(t + step * 0.22 + 1.25);
+      });
+    });
+  }
+
+  playRelicFound() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    [587.33, 739.99, 880, 1174.66].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t + idx * 0.09);
+      gain.gain.setValueAtTime(0.3, t + idx * 0.09);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.09 + 0.8);
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(t + idx * 0.09);
+      osc.stop(t + idx * 0.09 + 0.85);
+    });
+  }
+
   // --- DYNAMIC PROCEDURAL DARK FANTASY BGM ---
 
   startBGM() {

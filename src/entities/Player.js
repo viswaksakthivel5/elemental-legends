@@ -73,8 +73,29 @@ export class Player {
     this.swordWorldTip = new THREE.Vector3();
     this.isWeaponActive = false; // true only during active damage frames
 
+    // Persistent campaign upgrades
+    this.damageMultiplier = 1.0;
+
     // Apply initial elemental visual styling
     this.setElement('FIRE');
+  }
+
+  applyUpgrades(upgrades = {}) {
+    if (upgrades.bonusHealth) {
+      this.maxHealth = 100 + upgrades.bonusHealth;
+      this.health = Math.min(this.maxHealth, this.health + upgrades.bonusHealth);
+    }
+    if (upgrades.bonusEnergy) {
+      this.maxEnergy = 100 + upgrades.bonusEnergy;
+      this.energy = Math.min(this.maxEnergy, this.energy + upgrades.bonusEnergy);
+    }
+    if (upgrades.cooldownReduction) {
+      this.maxSkillCooldown = Math.max(3.0, 6.0 - upgrades.cooldownReduction);
+      this.maxUltimateCooldown = Math.max(10.0, 16.0 - (upgrades.cooldownReduction * 2));
+    }
+    if (upgrades.bonusDamageMultiplier) {
+      this.damageMultiplier = upgrades.bonusDamageMultiplier;
+    }
   }
 
   setElement(newElement) {

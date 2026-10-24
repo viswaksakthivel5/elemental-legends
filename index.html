@@ -14,6 +14,16 @@
   <!-- Damage Screen Vignette Flash -->
   <div id="damage-vignette"></div>
 
+  <!-- Echo Vision Ethereal Blue Vignette Flash -->
+  <div id="echo-vignette"></div>
+
+  <!-- Cinematic Chapter Title Overlay -->
+  <div id="chapter-overlay" class="chapter-banner" style="display: none;">
+    <div class="chapter-number" id="ch-number">CHAPTER I</div>
+    <div class="chapter-title" id="ch-title">THE FORGOTTEN VILLAGE</div>
+    <div class="chapter-sub" id="ch-sub">THE GATHERING MIST</div>
+  </div>
+
   <!-- Floating Damage Numbers Container -->
   <div id="damage-numbers-container"></div>
 
@@ -100,6 +110,13 @@
             <div class="skill-key">R</div>
             <div class="skill-cooldown-overlay" id="ult-cd-overlay" style="display: none;">0.0</div>
           </div>
+
+          <!-- Echo Vision Slot V -->
+          <div class="skill-slot ready" id="slot-echo-vision" title="Toggle Echo Vision [V]">
+            <div class="skill-name" style="font-size: 11px;">ECHO</div>
+            <div class="skill-key">V</div>
+            <div class="echo-indicator-dot" id="echo-status-dot"></div>
+          </div>
         </div>
       </div>
 
@@ -111,6 +128,7 @@
         <div><span class="prompt-tag">L-CLICK</span> 3-Hit Combo</div>
         <div><span class="prompt-tag">R-CLICK</span> Heavy Attack</div>
         <div><span class="prompt-tag">SPACE</span> Dodge (i-frames)</div>
+        <div><span class="prompt-tag">V</span> Echo Vision</div>
         <div><span class="prompt-tag">E</span> Interact / Read</div>
         <div><span class="prompt-tag">1 / 2 / 3</span> Switch Element</div>
         <div><span class="prompt-tag">ESC</span> Pause Menu</div>
@@ -124,7 +142,9 @@
       <h1 class="menu-title">ELEMENTAL LEGENDS</h1>
       <div class="menu-subtitle">THE CURSE OF THE HOLLOW REALM</div>
       <div class="button-stack">
-        <button class="btn-fantasy btn-primary" id="btn-start-game">START GAME</button>
+        <button class="btn-fantasy btn-primary" id="btn-start-game">NEW GAME</button>
+        <button class="btn-fantasy" id="btn-continue-game" style="display: none;">CONTINUE</button>
+        <button class="btn-fantasy" id="btn-open-level-select">LEVEL SELECT</button>
         <button class="btn-fantasy" id="btn-open-settings">SETTINGS</button>
         <button class="btn-fantasy" id="btn-open-controls">CONTROLS</button>
       </div>
@@ -148,9 +168,10 @@
 
       <div class="button-stack">
         <button class="btn-fantasy btn-primary" id="btn-resume-game">RESUME</button>
+        <button class="btn-fantasy" id="btn-pause-level-select">LEVEL SELECT</button>
+        <button class="btn-fantasy" id="btn-restart-game">RESTART LEVEL</button>
         <button class="btn-fantasy" id="btn-pause-settings">SETTINGS</button>
         <button class="btn-fantasy" id="btn-pause-controls">CONTROLS</button>
-        <button class="btn-fantasy" id="btn-restart-game">RESTART</button>
         <button class="btn-fantasy" id="btn-quit-to-title">MAIN MENU</button>
       </div>
     </div>
@@ -208,8 +229,9 @@
           <tr><td>Camera Look</td><td><span class="key-badge">Mouse</span></td><td>Third-person orbit mouse look</td></tr>
           <tr><td>Light Attack Combo</td><td><span class="key-badge">Left Click</span></td><td>3-hit chained combo with elemental procs</td></tr>
           <tr><td>Heavy Attack</td><td><span class="key-badge">Right Click</span></td><td>High-damage overhead ground slam</td></tr>
+          <tr><td>Echo Vision</td><td><span class="key-badge">V</span> or <span class="key-badge">C</span></td><td>Toggle spectral vision to reveal footprints, hidden runes, relics, and weak points</td></tr>
           <tr><td>Dodge Roll</td><td><span class="key-badge">Space</span> or <span class="key-badge">Shift</span></td><td>Fast evasive roll with invulnerability frames</td></tr>
-          <tr><td>Interact / Read Clue</td><td><span class="key-badge">E</span></td><td>Inspect journals, examine mechanisms, ignite braziers</td></tr>
+          <tr><td>Interact / Read Clue</td><td><span class="key-badge">E</span></td><td>Inspect journals, examine mechanisms, ignite braziers, open relics</td></tr>
           <tr><td>Elemental Skill</td><td><span class="key-badge">Q</span> or <span class="key-badge">F</span></td><td>Flame Wave / Ice Spikes / Thunder Dash</td></tr>
           <tr><td>Elemental Ultimate</td><td><span class="key-badge">R</span></td><td>Magma Cataclysm / Frost Nova / Storm Judgment</td></tr>
           <tr><td>Switch Elements</td><td><span class="key-badge">1</span> / <span class="key-badge">2</span> / <span class="key-badge">3</span> or <span class="key-badge">Wheel</span></td><td>Instantly swap Fire, Ice, or Storm</td></tr>
@@ -219,6 +241,57 @@
       </table>
 
       <button class="btn-fantasy" id="btn-close-controls">BACK</button>
+    </div>
+  </div>
+
+  <!-- LEVEL SELECTION SCREEN -->
+  <div id="level-select-modal" class="modal-screen" style="display: none;">
+    <div class="menu-card" style="max-width: 960px; width: 95%;">
+      <h2 class="menu-title">CAMPAIGN MAP</h2>
+      <div class="menu-subtitle">SELECT UNLOCKED CHAPTER</div>
+
+      <div class="level-cards-grid" id="level-cards-container">
+        <!-- Injected dynamically by UIManager -->
+      </div>
+
+      <div style="margin-top: 24px;">
+        <button class="btn-fantasy" id="btn-close-level-select">BACK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEVEL CLEAR MODAL -->
+  <div id="level-clear-modal" class="modal-screen" style="display: none;">
+    <div class="menu-card">
+      <h2 class="menu-title" style="color: #ffd700;" id="clear-level-title">CHAPTER CLEARED</h2>
+      <div class="menu-subtitle" id="clear-level-subtitle">ANCIENT CORRUPTION RECEDES</div>
+
+      <div class="stats-summary">
+        <div class="stat-item"><span class="stat-label">Time Taken</span><span class="stat-value" id="clear-stat-time">01:45</span></div>
+        <div class="stat-item"><span class="stat-label">Permanent Reward</span><span class="stat-value" id="clear-reward-text" style="color: #00e1ff;">Talisman of Vitality</span></div>
+      </div>
+
+      <div class="button-stack">
+        <button class="btn-fantasy btn-primary" id="btn-next-level">NEXT CHAPTER</button>
+        <button class="btn-fantasy" id="btn-replay-level">REPLAY CHAPTER</button>
+        <button class="btn-fantasy" id="btn-clear-level-select">LEVEL SELECT</button>
+        <button class="btn-fantasy" id="btn-clear-main-menu">MAIN MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRM NEW GAME MODAL -->
+  <div id="confirm-reset-modal" class="modal-screen" style="display: none;">
+    <div class="menu-card" style="max-width: 480px;">
+      <h2 class="menu-title" style="color: #ffaa00; font-size: 28px;">NEW GAME?</h2>
+      <div class="menu-subtitle">EXISTING PROGRESS WILL BE RESET</div>
+      <p style="font-size: 14px; color: #cbd5e1; margin-bottom: 24px; line-height: 1.6;">
+        Starting a New Game will reset unlocked chapters, collected relics, and upgrades. Are you sure you want to proceed?
+      </p>
+      <div class="button-stack">
+        <button class="btn-fantasy btn-primary" id="btn-confirm-reset-yes">YES, START OVER</button>
+        <button class="btn-fantasy" id="btn-confirm-reset-no">CANCEL</button>
+      </div>
     </div>
   </div>
 

@@ -1,10 +1,17 @@
 /**
- * UIManager.js
- * Controls HUD elements (HP, Energy, Boss bar, Cooldowns, Element Badges, Combo Counter)
- * and UI screen modals (Title, Settings, Controls, Pause, Victory, Defeat).
+ * UIManager.js - Level 4 Campaign UI Overhaul
+ * Controls HUD elements (HP, Energy, Boss bar, Cooldowns, Element Badges, Combo Counter, Echo Vision indicator)
+ * and UI screen modals:
+ * - Title Screen (New Game, Continue, Level Select, Settings, Controls)
+ * - Level Selection Modal (5 atmospheric cards with status, best time, and launch buttons)
+ * - Level Clear Modal (Completion stats, reward text, next chapter unlock)
+ * - Campaign Victory Modal (Final ending, total campaign stats, resolution lore)
+ * - Pause Screen, Settings, Controls, and Confirm New Game modals.
  */
 
 import { soundManager } from '../core/SoundManager.js';
+import { SaveManager } from '../systems/SaveManager.js';
+import { LEVEL_METADATA } from '../world/LevelManager.js';
 
 export class UIManager {
   constructor(engine) {
@@ -18,6 +25,20 @@ export class UIManager {
     this.controlsModal = document.getElementById('controls-modal');
     this.victoryScreen = document.getElementById('victory-screen');
     this.defeatScreen = document.getElementById('defeat-screen');
+
+    // Level 4 Modals
+    this.levelSelectModal = document.getElementById('level-select-modal');
+    this.levelCardsContainer = document.getElementById('level-cards-container');
+    this.levelClearModal = document.getElementById('level-clear-modal');
+    this.confirmResetModal = document.getElementById('confirm-reset-modal');
+    this.chapterOverlay = document.getElementById('chapter-overlay');
+    this.chNumber = document.getElementById('ch-number');
+    this.chTitle = document.getElementById('ch-title');
+    this.chSub = document.getElementById('ch-sub');
+
+    // Title buttons
+    this.btnStart = document.getElementById('btn-start-game');
+    this.btnContinue = document.getElementById('btn-continue-game');
 
     // Clue & Interaction Elements
     this.interactionPrompt = document.getElementById('interaction-prompt');
@@ -44,16 +65,27 @@ export class UIManager {
 
     this.skillCdOverlay = document.getElementById('skill-cd-overlay');
     this.ultCdOverlay = document.getElementById('ult-cd-overlay');
+    this.echoStatusDot = document.getElementById('echo-status-dot');
 
     this.comboDisplay = document.getElementById('combo-display');
     this.comboCountText = document.getElementById('combo-count-text');
     this.comboRankText = document.getElementById('combo-rank-text');
 
     this.damageVignette = document.getElementById('damage-vignette');
+    this.echoVignette = document.getElementById('echo-vignette');
 
     this.lastModalSource = 'title'; // 'title' or 'pause'
+    this.pendingLevelClearData = null;
 
     this._bindEvents();
+    this.updateTitleScreenButtons();
+  }
+
+  updateTitleScreenButtons() {
+    const hasProgress = SaveManager.hasExistingProgress();
+    if (this.btnContinue) {
+      this.btnContinue.style.display = hasProgress ? 'block' : 'none';
+    }
   }
 
   _bindEvents() {
@@ -63,48 +95,88 @@ export class UIManager {
       btnCloseClue.onclick = () => this.hideClue();
     }
 
-    // Title Buttons
-    const btnStart = document.getElementById('btn-start-game');
-    if (btnStart) {
-      const handleStart = (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        try {
-          soundManager.resume();
-          if (this.titleScreen) this.titleScreen.style.display = 'none';
-          if (this.hudOverlay) this.hudOverlay.style.display = 'flex';
-          this.engine.startNewGame();
-        } catch (err) {
-          console.error('[Elemental Legends] Error starting game:', err);
+    // New Game Button
+    if (this.btnStart) {
+      this.btnStart.onclick = (e) => {
+        if (e) e.stopPropagation();
+        if (SaveManager.hasExistingProgress()) {
+          this.confirmResetModal.style.display = 'flex';
+        } else {
+          this._startNewCampaign();
         }
       };
-
-      btnStart.onclick = handleStart;
-      btnStart.addEventListener('click', handleStart);
     }
 
-    // Allow Enter key to start game from Title screen
-    window.addEventListener('keydown', (e) => {
-      if ((e.key === 'Enter' || e.key === ' ') && this.engine.gameState === 'TITLE' && this.titleScreen && this.titleScreen.style.display !== 'none') {
-        if (btnStart) btnStart.click();
-      }
-    });
+    // Continue Game Button
+    if (this.btnContinue) {
+      this.btnContinue.onclick = (e) => {
+        if (e) e.stopPropagation();
+        const currentLvl = SaveManager.getData().currentLevel || 1;
+        this._launchLevel(currentLvl);
+      };
+    }
 
+    // Confirm Reset Modal Buttons
+    const btnResetYes = document.getElementById('btn-confirm-reset-yes');
+    if (btnResetYes) {
+      btnResetYes.onclick = () => {
+        this.confirmResetModal.style.display = 'none';
+        SaveManager.resetProgress();
+        this._startNewCampaign();
+      };
+    }
+
+    const btnResetNo = document.getElementById('btn-confirm-reset-no');
+    if (btnResetNo) {
+      btnResetNo.onclick = () => {
+        this.confirmResetModal.style.display = 'none';
+      };
+    }
+
+    // Level Select Open/Close
+    const btnOpenLvlSelect = document.getElementById('btn-open-level-select');
+    if (btnOpenLvlSelect) {
+      btnOpenLvlSelect.onclick = () => {
+        this.lastModalSource = 'title';
+        this.showLevelSelect();
+      };
+    }
+
+    const btnPauseLvlSelect = document.getElementById('btn-pause-level-select');
+    if (btnPauseLvlSelect) {
+      btnPauseLvlSelect.onclick = () => {
+        this.lastModalSource = 'pause';
+        this.pauseScreen.style.display = 'none';
+        this.showLevelSelect();
+      };
+    }
+
+    const btnCloseLvlSelect = document.getElementById('btn-close-level-select');
+    if (btnCloseLvlSelect) {
+      btnCloseLvlSelect.onclick = () => this.hideLevelSelect();
+    }
+
+    // Settings Modal
     document.getElementById('btn-open-settings').onclick = () => {
       this.lastModalSource = 'title';
       this.settingsModal.style.display = 'flex';
     };
+    document.getElementById('btn-pause-settings').onclick = () => {
+      this.lastModalSource = 'pause';
+      this.settingsModal.style.display = 'flex';
+    };
+    document.getElementById('btn-close-settings').onclick = () => {
+      this.settingsModal.style.display = 'none';
+    };
 
+    // Controls Modal
     document.getElementById('btn-open-controls').onclick = () => {
       this.lastModalSource = 'title';
       this.controlsModal.style.display = 'flex';
     };
-
-    // Close Modals
-    document.getElementById('btn-close-settings').onclick = () => {
-      this.settingsModal.style.display = 'none';
+    document.getElementById('btn-pause-controls').onclick = () => {
+      this.lastModalSource = 'pause';
+      this.controlsModal.style.display = 'flex';
     };
     document.getElementById('btn-close-controls').onclick = () => {
       this.controlsModal.style.display = 'none';
@@ -114,48 +186,94 @@ export class UIManager {
     document.getElementById('btn-resume-game').onclick = () => {
       this.engine.resumeGame();
     };
-    document.getElementById('btn-pause-settings').onclick = () => {
-      this.lastModalSource = 'pause';
-      this.settingsModal.style.display = 'flex';
-    };
-    document.getElementById('btn-pause-controls').onclick = () => {
-      this.lastModalSource = 'pause';
-      this.controlsModal.style.display = 'flex';
-    };
     document.getElementById('btn-restart-game').onclick = () => {
       this.pauseScreen.style.display = 'none';
-      this.engine.startNewGame();
+      this.engine.levelManager.loadLevel(this.engine.levelManager.currentLevelIndex);
+      this.engine.resumeGame();
     };
     document.getElementById('btn-quit-to-title').onclick = () => {
       this.pauseScreen.style.display = 'none';
       this.hudOverlay.style.display = 'none';
       this.titleScreen.style.display = 'flex';
+      this.updateTitleScreenButtons();
       this.engine.returnToTitle();
     };
 
-    // Victory Buttons
+    // Level Clear Modal Buttons
+    const btnNextLevel = document.getElementById('btn-next-level');
+    if (btnNextLevel) {
+      btnNextLevel.onclick = () => {
+        this.levelClearModal.style.display = 'none';
+        if (this.pendingLevelClearData && this.pendingLevelClearData.nextLevelNum) {
+          this._launchLevel(this.pendingLevelClearData.nextLevelNum);
+        } else {
+          this.showLevelSelect();
+        }
+      };
+    }
+
+    const btnReplayLevel = document.getElementById('btn-replay-level');
+    if (btnReplayLevel) {
+      btnReplayLevel.onclick = () => {
+        this.levelClearModal.style.display = 'none';
+        this._launchLevel(this.engine.levelManager.currentLevelIndex);
+      };
+    }
+
+    const btnClearLvlSelect = document.getElementById('btn-clear-level-select');
+    if (btnClearLvlSelect) {
+      btnClearLvlSelect.onclick = () => {
+        this.levelClearModal.style.display = 'none';
+        this.showLevelSelect();
+      };
+    }
+
+    const btnClearMainMenu = document.getElementById('btn-clear-main-menu');
+    if (btnClearMainMenu) {
+      btnClearMainMenu.onclick = () => {
+        this.levelClearModal.style.display = 'none';
+        this.hudOverlay.style.display = 'none';
+        this.titleScreen.style.display = 'flex';
+        this.updateTitleScreenButtons();
+        this.engine.returnToTitle();
+      };
+    }
+
+    // Victory Screen Buttons
     document.getElementById('btn-victory-restart').onclick = () => {
       this.victoryScreen.style.display = 'none';
-      this.engine.startNewGame();
+      this._launchLevel(1);
     };
     document.getElementById('btn-victory-title').onclick = () => {
       this.victoryScreen.style.display = 'none';
       this.hudOverlay.style.display = 'none';
       this.titleScreen.style.display = 'flex';
+      this.updateTitleScreenButtons();
       this.engine.returnToTitle();
     };
 
-    // Defeat Buttons
+    // Defeat Screen Buttons
     document.getElementById('btn-defeat-retry').onclick = () => {
       this.defeatScreen.style.display = 'none';
-      this.engine.startNewGame();
+      this._launchLevel(this.engine.levelManager.currentLevelIndex);
     };
     document.getElementById('btn-defeat-title').onclick = () => {
       this.defeatScreen.style.display = 'none';
       this.hudOverlay.style.display = 'none';
       this.titleScreen.style.display = 'flex';
+      this.updateTitleScreenButtons();
       this.engine.returnToTitle();
     };
+
+    // Echo Vision HUD button click
+    const slotEcho = document.getElementById('slot-echo-vision');
+    if (slotEcho) {
+      slotEcho.onclick = () => {
+        if (this.engine.echoVisionManager) {
+          this.engine.echoVisionManager.toggle();
+        }
+      };
+    }
 
     // Audio Sliders
     const sMaster = document.getElementById('slider-master-vol');
@@ -178,17 +296,132 @@ export class UIManager {
     };
   }
 
-  showPauseMenu() {
-    this.pauseScreen.style.display = 'flex';
+  _startNewCampaign() {
+    this._launchLevel(1);
   }
 
-  hidePauseMenu() {
-    this.pauseScreen.style.display = 'none';
-    this.settingsModal.style.display = 'none';
-    this.controlsModal.style.display = 'none';
+  _launchLevel(levelNum) {
+    try {
+      soundManager.resume();
+      this.titleScreen.style.display = 'none';
+      this.pauseScreen.style.display = 'none';
+      this.levelSelectModal.style.display = 'none';
+      this.levelClearModal.style.display = 'none';
+      this.victoryScreen.style.display = 'none';
+      this.defeatScreen.style.display = 'none';
+      this.hudOverlay.style.display = 'flex';
+
+      this.engine.startLevel(levelNum);
+    } catch (err) {
+      console.error('[UIManager] Error launching level:', err);
+    }
   }
 
-  showVictory(stats) {
+  showLevelSelect() {
+    this.renderLevelCards();
+    this.levelSelectModal.style.display = 'flex';
+  }
+
+  hideLevelSelect() {
+    this.levelSelectModal.style.display = 'none';
+    if (this.lastModalSource === 'pause') {
+      this.pauseScreen.style.display = 'flex';
+    } else {
+      this.titleScreen.style.display = 'flex';
+      this.updateTitleScreenButtons();
+    }
+  }
+
+  renderLevelCards() {
+    if (!this.levelCardsContainer) return;
+    this.levelCardsContainer.innerHTML = '';
+
+    const saveData = SaveManager.getData();
+
+    LEVEL_METADATA.forEach(meta => {
+      const isUnlocked = saveData.unlockedLevels.includes(meta.id);
+      const isCompleted = saveData.completedLevels.includes(meta.id);
+      const bestTimeSec = saveData.stats.bestTimes[meta.id];
+
+      let timeStr = 'None';
+      if (bestTimeSec !== null && bestTimeSec !== undefined) {
+        const m = Math.floor(bestTimeSec / 60);
+        const s = Math.floor(bestTimeSec % 60);
+        timeStr = `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+      }
+
+      const card = document.createElement('div');
+      card.className = `level-card ${isCompleted ? 'completed' : ''} ${!isUnlocked ? 'locked' : ''}`;
+
+      let statusHtml = '';
+      if (isCompleted) {
+        statusHtml = `<div class="level-status-tag status-completed">COMPLETED ★</div>`;
+      } else if (isUnlocked) {
+        statusHtml = `<div class="level-status-tag status-unlocked">UNLOCKED</div>`;
+      } else {
+        statusHtml = `<div class="level-status-tag status-locked">LOCKED 🔒</div>`;
+      }
+
+      card.innerHTML = `
+        <div class="level-badge-icon">${meta.badgeIcon}</div>
+        <div class="level-card-chapter">${meta.chapter}</div>
+        <div class="level-card-title">${meta.title}</div>
+        <div class="level-card-desc">${meta.description}</div>
+        ${statusHtml}
+        <div class="level-best-time">Best: ${timeStr}</div>
+        <button class="btn-fantasy btn-primary btn-play-level" ${!isUnlocked ? 'disabled' : ''}>
+          ${isUnlocked ? 'PLAY CHAPTER' : 'LOCKED'}
+        </button>
+      `;
+
+      if (isUnlocked) {
+        const btn = card.querySelector('.btn-play-level');
+        btn.onclick = () => this._launchLevel(meta.id);
+      }
+
+      this.levelCardsContainer.appendChild(card);
+    });
+  }
+
+  showChapterTitle(chapter, title, sub) {
+    if (!this.chapterOverlay) return;
+    if (this.chNumber) this.chNumber.innerText = chapter;
+    if (this.chTitle) this.chTitle.innerText = title;
+    if (this.chSub) this.chSub.innerText = sub;
+
+    this.chapterOverlay.style.display = 'block';
+    // Re-trigger animation
+    this.chapterOverlay.classList.remove('chapter-banner');
+    void this.chapterOverlay.offsetWidth;
+    this.chapterOverlay.classList.add('chapter-banner');
+
+    setTimeout(() => {
+      if (this.chapterOverlay) this.chapterOverlay.style.display = 'none';
+    }, 3900);
+  }
+
+  showLevelClearModal(data) {
+    this.pendingLevelClearData = data;
+    this.hudOverlay.style.display = 'none';
+
+    document.getElementById('clear-level-title').innerText = `${data.levelTitle} CLEARED`;
+    document.getElementById('clear-stat-time').innerText = data.time;
+    document.getElementById('clear-reward-text').innerText = data.rewardText;
+
+    const btnNext = document.getElementById('btn-next-level');
+    if (btnNext) {
+      if (data.nextLevelNum) {
+        btnNext.style.display = 'inline-block';
+        btnNext.innerText = `PROCEED TO LEVEL ${data.nextLevelNum}`;
+      } else {
+        btnNext.style.display = 'none';
+      }
+    }
+
+    this.levelClearModal.style.display = 'flex';
+  }
+
+  showCampaignVictory(stats) {
     this.hudOverlay.style.display = 'none';
     document.getElementById('vic-stat-time').innerText = stats.time;
     document.getElementById('vic-stat-combo').innerText = `${stats.maxCombo} HITS`;
@@ -198,11 +431,28 @@ export class UIManager {
 
   showDefeat(stats) {
     this.hudOverlay.style.display = 'none';
-    document.getElementById('def-stat-wave').innerText = `Wave ${stats.wave}`;
+    document.getElementById('def-stat-wave').innerText = `Level ${this.engine.levelManager.currentLevelIndex}`;
     document.getElementById('def-stat-combo').innerText = `${stats.maxCombo} HITS`;
     document.getElementById('def-stat-dmg').innerText = stats.totalDamage;
     document.getElementById('def-stat-kills').innerText = stats.kills;
     this.defeatScreen.style.display = 'flex';
+  }
+
+  setEchoVisionStatus(isActive) {
+    if (this.echoStatusDot) {
+      this.echoStatusDot.classList.toggle('active', isActive);
+    }
+  }
+
+  showPauseMenu() {
+    this.pauseScreen.style.display = 'flex';
+  }
+
+  hidePauseMenu() {
+    this.pauseScreen.style.display = 'none';
+    this.settingsModal.style.display = 'none';
+    this.controlsModal.style.display = 'none';
+    this.levelSelectModal.style.display = 'none';
   }
 
   triggerDamageVignette() {
@@ -213,7 +463,7 @@ export class UIManager {
     }, 220);
   }
 
-  updateHUD(player, waveManager, combatSystem) {
+  updateHUD(player, combatSystem) {
     if (!player) return;
 
     // 1. Player HP
@@ -246,13 +496,13 @@ export class UIManager {
       this.ultCdOverlay.style.display = 'none';
     }
 
-    // 5. Boss HP Bar
-    const boss = waveManager.getBoss();
+    // 5. Boss HP Bar (if Boss active in level)
+    const boss = this.engine.levelManager.getBoss();
     if (boss && boss.isAlive) {
       this.bossHud.style.display = 'flex';
       const bossHpPct = Math.max(0, (boss.health / boss.maxHealth) * 100);
       this.bossHpFill.style.width = `${bossHpPct}%`;
-      this.bossPhaseText.innerText = `PHASE ${boss.phase} - ${boss.phase === 3 ? 'ENRAGED CALAMITY' : (boss.phase === 2 ? 'ABYSSAL CORRUPTION' : 'AWAKENED')}`;
+      this.bossPhaseText.innerText = `PHASE ${boss.phase} - ${boss.phase === 3 ? 'APOCALYPTIC CALAMITY' : (boss.phase === 2 ? 'ENRAGED CORRUPTION' : 'AWAKENED')}`;
     } else {
       this.bossHud.style.display = 'none';
     }
@@ -273,8 +523,8 @@ export class UIManager {
   }
 
   setObjective(title, desc) {
-    this.objTitle.innerText = title;
-    this.objDesc.innerText = desc;
+    if (this.objTitle) this.objTitle.innerText = title;
+    if (this.objDesc) this.objDesc.innerText = desc;
   }
 
   setInteractionPrompt(text) {

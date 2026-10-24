@@ -35,6 +35,12 @@ export class PuzzleManager {
     this.portcullisMesh = null;
     this.portcullisRaised = false;
 
+    // Puzzle 4: Dual Elemental Fortress Winch
+    this.winchFireActive = false;
+    this.winchIceActive = false;
+    this.winchFireMesh = null;
+    this.winchIceMesh = null;
+
     // Interactive Story Clues
     this.clues = [
       {
@@ -91,10 +97,19 @@ export class PuzzleManager {
     }
   }
 
-  registerConduit(conduitMesh, light, portcullisMesh) {
-    this.conduitMesh = conduitMesh;
-    this.conduitLight = light;
-    this.portcullisMesh = portcullisMesh;
+  get lightningConduitActive() {
+    return this.conduitCharged;
+  }
+
+  registerPortcullis(mesh) {
+    this.portcullisMesh = mesh;
+  }
+
+  registerDualWinch(winchFire, winchIce) {
+    this.winchFireMesh = winchFire;
+    this.winchIceMesh = winchIce;
+    this.winchFireActive = false;
+    this.winchIceActive = false;
   }
 
   update(dt, playerPosition, playerElement, cameraManager) {
@@ -295,15 +310,48 @@ export class PuzzleManager {
           this.igniteBrazier(b);
         }
       }
+      if (this.winchFireMesh && !this.winchFireActive && position.distanceTo(this.winchFireMesh.position) < 4.5) {
+        this.winchFireActive = true;
+        this.winchFireMesh.isLit = true;
+        if (this.winchFireMesh.light) {
+          this.winchFireMesh.light.color.setHex(0xff5500);
+          this.winchFireMesh.light.intensity = 20.0;
+        }
+        soundManager.playSkill('FIRE');
+        this._checkDualWinchComplete();
+      }
     } else if (element === 'ICE') {
-      const canalCenter = new THREE.Vector3(0, 0, -9);
+      const canalCenter = new THREE.Vector3(0, 0, -6);
       if (!this.canalFrozen && position.distanceTo(canalCenter) < 8.5) {
         this.freezeCanal();
+      }
+      if (this.winchIceMesh && !this.winchIceActive && position.distanceTo(this.winchIceMesh.position) < 4.5) {
+        this.winchIceActive = true;
+        this.winchIceMesh.isLit = true;
+        if (this.winchIceMesh.light) {
+          this.winchIceMesh.light.color.setHex(0x00d9ff);
+          this.winchIceMesh.light.intensity = 20.0;
+        }
+        soundManager.playSkill('ICE');
+        this._checkDualWinchComplete();
       }
     } else if (element === 'STORM') {
       if (!this.conduitCharged && this.conduitMesh && position.distanceTo(this.conduitMesh.position) < 6.0) {
         this.chargeConduit();
       }
+    }
+  }
+
+  _checkDualWinchComplete() {
+    if (this.winchFireActive && this.winchIceActive && !this.portcullisRaised) {
+      this.portcullisRaised = true;
+      soundManager.playVictory();
+      if (this.onObjectiveUpdate) {
+        this.onObjectiveUpdate('Fortress Portcullis Raised! Enter the Sanctum.');
+      }
+    } else if (this.onObjectiveUpdate) {
+      const count = (this.winchFireActive ? 1 : 0) + (this.winchIceActive ? 1 : 0);
+      this.onObjectiveUpdate(`Fortress Winch Clamps Disengaged: (${count}/2)`);
     }
   }
 
@@ -313,6 +361,11 @@ export class PuzzleManager {
     this.canalFrozen = false;
     this.conduitCharged = false;
     this.portcullisRaised = false;
+    this.winchFireActive = false;
+    this.winchIceActive = false;
+    this.winchFireMesh = null;
+    this.winchIceMesh = null;
+    this.braziers = [];
     for (const b of this.braziers) {
       b.isLit = false;
       if (b.light) {

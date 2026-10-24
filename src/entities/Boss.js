@@ -20,6 +20,7 @@ export class Boss {
     this.heartRune = modelData.heartRune;
     this.abyssalMaterials = modelData.abyssalMaterials;
 
+    this.name = 'The Hollow Guardian';
     this.maxHealth = 600;
     this.health = 600;
     this.isAlive = true;

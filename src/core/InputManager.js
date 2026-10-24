@@ -21,6 +21,7 @@ export class InputManager {
       ultimate: false,
       interact: false,
       lockTarget: false,
+      echoVision: false,
       switchFire: false,
       switchIce: false,
       switchStorm: false,
@@ -102,6 +103,9 @@ export class InputManager {
     }
     if (key === 'e') {
       this.actions.interact = true;
+    }
+    if (key === 'v' || key === 'c') {
+      this.actions.echoVision = true;
     }
     if (key === 'tab') {
       e.preventDefault();

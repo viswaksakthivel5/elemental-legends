@@ -67,6 +67,8 @@ export class CombatSystem {
       hitRange = 3.6;
     }
 
+    baseDamage *= (player.damageMultiplier || 1.0);
+
     // Check normal enemies
     enemies.forEach(enemy => {
       if (!enemy.isAlive || this.hitEnemiesThisSwing.has(enemy)) return;
