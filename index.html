@@ -208,6 +208,14 @@
           <span>Camera Sensitivity</span>
           <input type="range" id="slider-cam-sens" min="0.001" max="0.005" step="0.0005" value="0.0022">
         </div>
+        <div class="setting-row">
+          <span>Display Mode</span>
+          <button class="btn-fantasy" id="btn-toggle-fullscreen" style="padding: 6px 14px; font-size: 13px;">TOGGLE FULLSCREEN</button>
+        </div>
+        <div class="setting-row">
+          <span>Audio Mute</span>
+          <button class="btn-fantasy" id="btn-toggle-mute" style="padding: 6px 14px; font-size: 13px;">MUTE AUDIO</button>
+        </div>
       </div>
 
       <button class="btn-fantasy" id="btn-close-settings">BACK</button>
@@ -312,7 +320,8 @@
       </div>
 
       <div class="button-stack">
-        <button class="btn-fantasy btn-primary" id="btn-victory-restart">PLAY AGAIN</button>
+        <button class="btn-fantasy btn-primary" id="btn-victory-level-select">LEVEL SELECT</button>
+        <button class="btn-fantasy" id="btn-victory-restart">PLAY FROM BEGINNING</button>
         <button class="btn-fantasy" id="btn-victory-title">MAIN MENU</button>
       </div>
     </div>
@@ -325,7 +334,7 @@
       <div class="menu-subtitle">YOUR SOUL WAS CONSUMED</div>
 
       <div class="stats-summary">
-        <div class="stat-item"><span class="stat-label">Wave Reached</span><span class="stat-value" id="def-stat-wave">Wave 2</span></div>
+        <div class="stat-item"><span class="stat-label">Chapter</span><span class="stat-value" id="def-stat-wave">Chapter I</span></div>
         <div class="stat-item"><span class="stat-label">Max Combo</span><span class="stat-value" id="def-stat-combo">12 HITS</span></div>
         <div class="stat-item"><span class="stat-label">Damage Dealt</span><span class="stat-value" id="def-stat-dmg">1120</span></div>
         <div class="stat-item"><span class="stat-label">Enemies Slain</span><span class="stat-value" id="def-stat-kills">6</span></div>
@@ -333,6 +342,7 @@
 
       <div class="button-stack">
         <button class="btn-fantasy btn-primary" id="btn-defeat-retry">TRY AGAIN</button>
+        <button class="btn-fantasy" id="btn-defeat-level-select">LEVEL SELECT</button>
         <button class="btn-fantasy" id="btn-defeat-title">MAIN MENU</button>
       </div>
     </div>

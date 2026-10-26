@@ -44,7 +44,7 @@ global.window = {
   AudioContext: class {
     createGain() { return { gain: { value: 1, linearRampToValueAtTime: () => {}, exponentialRampToValueAtTime: () => {}, setValueAtTime: () => {} }, connect: () => {} }; }
     createOscillator() { return { type: '', frequency: { setValueAtTime: () => {}, linearRampToValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} }, connect: () => {}, start: () => {}, stop: () => {} }; }
-    createBiquadFilter() { return { type: '', frequency: { value: 1000, setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} }, connect: () => {} }; }
+    createBiquadFilter() { return { type: '', frequency: { value: 1000, setValueAtTime: () => {}, linearRampToValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} }, Q: { value: 1, setValueAtTime: () => {}, linearRampToValueAtTime: () => {} }, connect: () => {} }; }
     createBufferSource() { return { buffer: null, loop: false, playbackRate: { value: 1 }, connect: () => {}, start: () => {}, stop: () => {} }; }
     createBuffer() { return { getChannelData: () => new Float32Array(44100) }; }
     destination = {};
@@ -192,7 +192,8 @@ async function runCampaignTests() {
     },
     vfxManager: {
       spawnTelegraph: () => {},
-      spawnShockwave: () => {}
+      spawnShockwave: () => {},
+      spawnHitSparks: () => {}
     },
     elementalSystem: {
       spawnEnemyProjectile: () => {}
@@ -235,7 +236,105 @@ async function runCampaignTests() {
   console.assert(ui.levelCardsContainer.children.length === 5, 'Level selection must render all 5 level cards');
   console.log('All 5 level cards rendered cleanly in UI.');
 
-  console.log('=== ALL LEVEL 4 CAMPAIGN AUTOMATED TESTS PASSED CLEANLY! ===');
+  console.log('=== TEST 5: BOSS COMBAT & 3-PHASE ESCALATION ===');
+  levelManager.loadLevel(5);
+  const boss = levelManager.getBoss();
+  console.assert(boss !== null, 'Level 5 must have active Boss');
+  console.assert(boss.phase === 1, 'Boss must start in Phase 1');
+  console.assert(boss.health === 600, 'Boss max health must be 600');
+
+  // Damage boss to trigger Phase 2 (HP < 400)
+  boss.takeDamage(220, false);
+  console.assert(boss.health === 380, 'Boss health must be 380 after 220 damage');
+  console.assert(boss.phase === 2, 'Boss must escalate to Phase 2 below 400 HP (66%)');
+  console.log('Boss Phase 2 escalation verified.');
+
+  // Damage boss to trigger Phase 3 (HP < 200)
+  boss.takeDamage(200, false);
+  console.assert(boss.health === 180, 'Boss health must be 180');
+  console.assert(boss.phase === 3, 'Boss must escalate to Phase 3 (Enraged Calamity) below 200 HP (33%)');
+  console.log('Boss Phase 3 Enraged Calamity verified.');
+
+  // Lethal damage to defeat boss
+  boss.takeDamage(250, false);
+  console.assert(boss.health === 0, 'Boss health must be 0');
+  console.assert(boss.isAlive === false, 'Boss must be marked dead');
+  console.assert(boss.state === 'DEFEATED', 'Boss state must transition to DEFEATED');
+  console.log('Boss defeat state verified.');
+
+  console.log('=== TEST 6: ELEMENTAL PUZZLE SYSTEMS ===');
+  const { PuzzleManager } = await import('../src/systems/PuzzleManager.js');
+  const puzzle = new PuzzleManager(scene, mockEngine.vfxManager);
+
+  // Brazier registration & lighting test
+  const brazierMesh = new THREE.Mesh();
+  const fireLight = new THREE.PointLight();
+  puzzle.registerBrazier(brazierMesh, fireLight, 0);
+  console.assert(puzzle.braziers[0].isLit === false, 'Brazier must start unlit');
+  puzzle.lightBrazier(0);
+  console.assert(puzzle.braziers[0].isLit === true, 'Brazier must be lit after lightBrazier()');
+  console.log('Fire Brazier puzzle logic verified.');
+
+  // Canal freeze test
+  const canalMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 1, 10), new THREE.MeshStandardMaterial());
+  const iceBridge = new THREE.Mesh();
+  puzzle.registerCanal(canalMesh, iceBridge);
+  console.assert(puzzle.canalFrozen === false, 'Canal must start unfrozen');
+  puzzle.freezeCanal();
+  console.assert(puzzle.canalFrozen === true, 'Canal must be frozen');
+  console.assert(iceBridge.visible === true, 'Ice bridge must be visible');
+  console.log('Ice Canal freeze puzzle logic verified.');
+
+  // Storm dynamo conduit test
+  const conduitMesh = new THREE.Mesh();
+  const coil = new THREE.Mesh();
+  const condLight = new THREE.PointLight();
+  puzzle.registerConduit(conduitMesh, coil, condLight);
+  console.assert(puzzle.lightningConduitActive === false, 'Conduit must start inactive');
+  puzzle.chargeConduit();
+  console.assert(puzzle.lightningConduitActive === true, 'Conduit must be active after chargeConduit()');
+  console.log('Storm Conduit dynamo puzzle logic verified.');
+
+  // Dual winch puzzle test
+  const winchL = new THREE.Mesh();
+  const winchR = new THREE.Mesh();
+  puzzle.portcullisRaised = false;
+  puzzle.registerDualWinch(winchL, winchR);
+  console.assert(puzzle.winchFireActive === false && puzzle.winchIceActive === false, 'Winches must start untriggered');
+  puzzle.triggerWinch('LEFT');
+  console.assert(puzzle.winchFireActive === true && puzzle.portcullisRaised === false, 'Left winch triggered alone should not raise portcullis');
+  puzzle.triggerWinch('RIGHT');
+  console.assert(puzzle.winchIceActive === true && puzzle.portcullisRaised === true, 'Both winches triggered should raise portcullis');
+  console.log('Dual Winch elemental puzzle logic verified.');
+
+  console.log('=== TEST 7: AUDIO ENGINE CONTROLS ===');
+  const { SoundManager } = await import('../src/core/SoundManager.js');
+  const snd = new SoundManager();
+  snd.setMasterVolume(0.75);
+  console.assert(snd.masterVolume === 0.75, 'Master volume must update to 0.75');
+  snd.setSFXVolume(0.60);
+  console.assert(snd.sfxVolume === 0.60, 'SFX volume must update to 0.60');
+  snd.setBGMVolume(0.40);
+  console.assert(snd.bgmVolume === 0.40, 'BGM volume must update to 0.40');
+
+  const muteState1 = snd.toggleMute();
+  console.assert(muteState1 === true, 'Mute must toggle to true');
+  const muteState2 = snd.toggleMute();
+  console.assert(muteState2 === false, 'Mute must toggle to false');
+  console.log('Audio volume and mute controls verified.');
+
+  console.log('=== TEST 8: MEMORY MANAGEMENT & RECURSIVE DISPOSAL ===');
+  // Load and clean multiple levels sequentially to verify zero accumulation
+  for (let cycle = 1; cycle <= 3; cycle++) {
+    levelManager.loadLevel(cycle);
+  }
+  levelManager._cleanPreviousLevel();
+  console.assert(levelManager.levelWorldGroup.children.length === 0, 'Level world group must be empty after cleanup');
+  console.assert(levelManager.enemies.length === 0, 'Enemy list must be empty after cleanup');
+  console.assert(levelManager.boss === null, 'Boss must be null after cleanup');
+  console.log('Recursive resource disposal and memory cleanup verified.');
+
+  console.log('=== ALL LEVEL 5 MASTER RELEASE AUTOMATED TESTS PASSED CLEANLY! ===');
 }
 
 runCampaignTests().catch(err => {

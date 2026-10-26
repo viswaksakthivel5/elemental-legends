@@ -115,29 +115,35 @@ export class Boss {
     this.mesh.position.copy(this.position);
   }
 
-  _enterPhase2(cameraManager) {
+  _enterPhase2(cameraManager = null) {
     this.phase = 2;
     this.moveSpeed = 4.4;
     soundManager.playBossRoar();
-    cameraManager.addScreenShake(0.8);
+    if (cameraManager && cameraManager.addScreenShake) {
+      cameraManager.addScreenShake(0.8);
+    }
     if (this.onPhaseChange) this.onPhaseChange(2);
     soundManager.setCombatIntensity(2);
   }
 
-  _enterPhase3(cameraManager) {
+  _enterPhase3(cameraManager = null) {
     this.phase = 3;
     this.moveSpeed = 5.2; // Enraged speed
     soundManager.playBossRoar();
-    cameraManager.addScreenShake(1.2);
+    if (cameraManager && cameraManager.addScreenShake) {
+      cameraManager.addScreenShake(1.2);
+    }
     if (this.onPhaseChange) this.onPhaseChange(3);
     soundManager.setCombatIntensity(3);
 
     // Turn boss eyes & blade blazing crimson
-    this.abyssalMaterials.forEach(m => {
-      m.color.setHex(0xff1122);
-      m.emissive.setHex(0xff0033);
-      m.emissiveIntensity = 3.5;
-    });
+    if (this.abyssalMaterials) {
+      this.abyssalMaterials.forEach(m => {
+        if (m.color) m.color.setHex(0xff1122);
+        if (m.emissive) m.emissive.setHex(0xff0033);
+        m.emissiveIntensity = 3.5;
+      });
+    }
   }
 
   _updateIntro(dt, cameraManager) {
@@ -331,6 +337,14 @@ export class Boss {
       soundManager.playBossRoar();
       if (this.onDefeat) this.onDefeat();
       return;
+    }
+
+    // Check phase transitions on damage
+    const hpRatio = this.health / this.maxHealth;
+    if (hpRatio <= 0.33 && this.phase < 3) {
+      this._enterPhase3();
+    } else if (hpRatio <= 0.66 && this.phase < 2) {
+      this._enterPhase2();
     }
 
     // Stagger on massive elemental burst damage

@@ -136,30 +136,57 @@ export class LevelManager {
   }
 
   _cleanPreviousLevel() {
-    // Remove all meshes from levelWorldGroup
-    while (this.levelWorldGroup.children.length > 0) {
-      const child = this.levelWorldGroup.children[0];
-      this.levelWorldGroup.remove(child);
-      if (child.geometry) child.geometry.dispose();
-      if (child.material) {
-        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
-        else child.material.dispose();
+    // 1. Recursively dispose all meshes, geometries, and materials in levelWorldGroup
+    this.levelWorldGroup.traverse(obj => {
+      if (obj.geometry) {
+        obj.geometry.dispose();
       }
+      if (obj.material) {
+        if (Array.isArray(obj.material)) {
+          obj.material.forEach(m => {
+            if (m.map) m.map.dispose();
+            m.dispose();
+          });
+        } else {
+          if (obj.material.map) obj.material.map.dispose();
+          obj.material.dispose();
+        }
+      }
+    });
+
+    while (this.levelWorldGroup.children.length > 0) {
+      this.levelWorldGroup.remove(this.levelWorldGroup.children[0]);
     }
 
-    // Remove active enemies
+    // 2. Remove active enemies and dispose their meshes
     this.enemies.forEach(e => {
-      if (e.mesh && e.mesh.parent) e.mesh.parent.remove(e.mesh);
+      if (e.mesh) {
+        e.mesh.traverse(obj => {
+          if (obj.geometry) obj.geometry.dispose();
+          if (obj.material) {
+            if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+            else obj.material.dispose();
+          }
+        });
+        if (e.mesh.parent) e.mesh.parent.remove(e.mesh);
+      }
     });
     this.enemies = [];
 
-    // Remove boss if present
-    if (this.boss && this.boss.mesh && this.boss.mesh.parent) {
-      this.boss.mesh.parent.remove(this.boss.mesh);
+    // 3. Remove boss if present and dispose meshes
+    if (this.boss && this.boss.mesh) {
+      this.boss.mesh.traverse(obj => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+          else obj.material.dispose();
+        }
+      });
+      if (this.boss.mesh.parent) this.boss.mesh.parent.remove(this.boss.mesh);
       this.boss = null;
     }
 
-    // Clear puzzle manager & echo vision revealables
+    // 4. Clear puzzle manager & echo vision revealables
     if (this.engine.puzzleManager) {
       this.engine.puzzleManager.reset();
     }

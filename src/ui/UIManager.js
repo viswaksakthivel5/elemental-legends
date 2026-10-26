@@ -240,6 +240,14 @@ export class UIManager {
     }
 
     // Victory Screen Buttons
+    const btnVicLvl = document.getElementById('btn-victory-level-select');
+    if (btnVicLvl) {
+      btnVicLvl.onclick = () => {
+        this.victoryScreen.style.display = 'none';
+        this.hudOverlay.style.display = 'none';
+        this.showLevelSelect();
+      };
+    }
     document.getElementById('btn-victory-restart').onclick = () => {
       this.victoryScreen.style.display = 'none';
       this._launchLevel(1);
@@ -253,6 +261,14 @@ export class UIManager {
     };
 
     // Defeat Screen Buttons
+    const btnDefLvl = document.getElementById('btn-defeat-level-select');
+    if (btnDefLvl) {
+      btnDefLvl.onclick = () => {
+        this.defeatScreen.style.display = 'none';
+        this.hudOverlay.style.display = 'none';
+        this.showLevelSelect();
+      };
+    }
     document.getElementById('btn-defeat-retry').onclick = () => {
       this.defeatScreen.style.display = 'none';
       this._launchLevel(this.engine.levelManager.currentLevelIndex);
@@ -264,6 +280,29 @@ export class UIManager {
       this.updateTitleScreenButtons();
       this.engine.returnToTitle();
     };
+
+    // Fullscreen and Mute Audio Buttons in Settings
+    const btnFullscreen = document.getElementById('btn-toggle-fullscreen');
+    if (btnFullscreen) {
+      btnFullscreen.onclick = () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(err => {
+            console.warn('Fullscreen request denied:', err);
+          });
+        } else {
+          document.exitFullscreen();
+        }
+      };
+    }
+
+    const btnMute = document.getElementById('btn-toggle-mute');
+    if (btnMute) {
+      btnMute.onclick = () => {
+        const isMuted = soundManager.toggleMute();
+        btnMute.innerText = isMuted ? 'UNMUTE AUDIO' : 'MUTE AUDIO';
+        btnMute.style.color = isMuted ? '#ff3b30' : '#e2e8f0';
+      };
+    }
 
     // Echo Vision HUD button click
     const slotEcho = document.getElementById('slot-echo-vision');
@@ -431,7 +470,11 @@ export class UIManager {
 
   showDefeat(stats) {
     this.hudOverlay.style.display = 'none';
-    document.getElementById('def-stat-wave').innerText = `Level ${this.engine.levelManager.currentLevelIndex}`;
+    const lvlIdx = this.engine.levelManager ? this.engine.levelManager.currentLevelIndex : 1;
+    const meta = LEVEL_METADATA[lvlIdx - 1];
+    const chapterName = meta ? `${meta.chapter}` : `Level ${lvlIdx}`;
+    const defElem = document.getElementById('def-stat-wave');
+    if (defElem) defElem.innerText = chapterName;
     document.getElementById('def-stat-combo').innerText = `${stats.maxCombo} HITS`;
     document.getElementById('def-stat-dmg').innerText = stats.totalDamage;
     document.getElementById('def-stat-kills').innerText = stats.kills;

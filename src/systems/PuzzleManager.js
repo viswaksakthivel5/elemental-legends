@@ -105,11 +105,29 @@ export class PuzzleManager {
     this.portcullisMesh = mesh;
   }
 
+  registerConduit(conduitMesh, terminalMesh, light) {
+    this.conduitMesh = conduitMesh;
+    this.conduitTerminal = terminalMesh;
+    this.conduitLight = light;
+    this.conduitCharged = false;
+  }
+
   registerDualWinch(winchFire, winchIce) {
     this.winchFireMesh = winchFire;
     this.winchIceMesh = winchIce;
     this.winchFireActive = false;
     this.winchIceActive = false;
+  }
+
+  triggerWinch(type = 'FIRE') {
+    if (type === 'FIRE' || type === 'LEFT') {
+      this.winchFireActive = true;
+      if (this.winchFireMesh) this.winchFireMesh.isLit = true;
+    } else if (type === 'ICE' || type === 'RIGHT') {
+      this.winchIceActive = true;
+      if (this.winchIceMesh) this.winchIceMesh.isLit = true;
+    }
+    this._checkDualWinchComplete();
   }
 
   update(dt, playerPosition, playerElement, cameraManager) {
@@ -217,8 +235,15 @@ export class PuzzleManager {
   }
 
   // --- IGNITE BRAZIER (FIRE PUZZLE) ---
+  lightBrazier(indexOrBrazier) {
+    const brazier = typeof indexOrBrazier === 'number'
+      ? this.braziers[indexOrBrazier]
+      : indexOrBrazier;
+    if (brazier) this.igniteBrazier(brazier);
+  }
+
   igniteBrazier(brazier) {
-    if (brazier.isLit) return;
+    if (!brazier || brazier.isLit) return;
     brazier.isLit = true;
     this.braziersLitCount++;
 
@@ -228,8 +253,10 @@ export class PuzzleManager {
     }
 
     soundManager.playSkill('FIRE');
-    this.vfx.spawnShockwave(brazier.position, 2.5, 0xff4400);
-    this.vfx.spawnHitSparks(brazier.position, 'FIRE', 20);
+    if (this.vfx) {
+      this.vfx.spawnShockwave(brazier.position, 2.5, 0xff4400);
+      this.vfx.spawnHitSparks(brazier.position, 'FIRE', 20);
+    }
 
     if (this.onObjectiveUpdate) {
       this.onObjectiveUpdate(`Village Braziers Ignited: (${this.braziersLitCount}/3)`);
@@ -242,7 +269,7 @@ export class PuzzleManager {
 
       // Burn away cursed vines
       if (this.cursedVinesMesh) {
-        this.vfx.spawnHitSparks(this.cursedVinesMesh.position, 'FIRE', 40);
+        if (this.vfx) this.vfx.spawnHitSparks(this.cursedVinesMesh.position, 'FIRE', 40);
         this.scene.remove(this.cursedVinesMesh);
       }
 
@@ -268,7 +295,7 @@ export class PuzzleManager {
 
     if (this.iceBridgeMesh) {
       this.iceBridgeMesh.visible = true;
-      this.vfx.spawnShockwave(this.iceBridgeMesh.position, 6.0, 0x00d9ff);
+      if (this.vfx) this.vfx.spawnShockwave(this.iceBridgeMesh.position, 6.0, 0x00d9ff);
     }
 
     if (this.onObjectiveUpdate) {
@@ -289,7 +316,7 @@ export class PuzzleManager {
       this.conduitLight.color.setHex(0x3388ff);
     }
 
-    if (this.conduitMesh) {
+    if (this.conduitMesh && this.vfx) {
       this.vfx.spawnShockwave(this.conduitMesh.position, 4.0, 0x5599ff);
       this.vfx.spawnHitSparks(this.conduitMesh.position, 'STORM', 30);
     }
